@@ -33,8 +33,6 @@
 
     }
 };
- //   const int NUM_OF_CITIES=1;
-//    const int NUM_OF_ITERATIONS=1;
     PostMovement::PostMovement(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside, unsigned locations,unsigned print_on)
                     : generatorHelper(agents*0.8)
                     , offset1((locations/2) + 1)
