@@ -12,7 +12,7 @@ public:
     static constexpr unsigned TO = 2;
 
     thrust::device_vector<unsigned> generatorHelper;
-    thrust::device_vector<unsigned> offset1, offset2; // [0, 0, 2, 3, 3, 3, 4, 4, 4] #localtion_length
+//    thrust::device_vector<unsigned> offset1, offset2; // [0, 0, 2, 3, 3, 3, 4, 4, 4] #localtion_length
     thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>> movement1, movement2;
     
     
@@ -24,7 +24,7 @@ public:
     std::vector<thrust::device_vector<unsigned>> agentIDs;//contains the IDs in the particular city
     std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned>>> locationAgentLists;//contains the cityID and the agent ids ordered by locations, not used
     std::vector<thrust::host_vector<unsigned>>hostAgentLocations; // agent ids ordered by locations, this is used
-    std::vector<thrust::device_vector<thrust::tuple<unsigned>>> offsets;
+    std::vector<thrust::device_vector<unsigned>> offsets;
 
     std::vector<thrust::host_vector<unsigned>>placeToCopyAgentLengths;
     std::vector<thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned>>> hostMovements;

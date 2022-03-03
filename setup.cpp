@@ -15,15 +15,6 @@
     #include "thrust/iterator/zip_iterator.h"
     #include "thrust/iterator/permutation_iterator.h"
 
-    /*void initHelper1(thrust::device_vector<unsigned>& placeToCopyAgentLengths, thrust::device_vector<unsigned>& agentLocationBeforeMovement, thrust::device_vector<thrust::pair<unsigned, unsigned>>& agentListWithPairs) {
-        thrust::transform(thrust::make_zip_iterator(placeToCopyAgentLengths.begin(), agentLocationBeforeMovement.begin())
-                            , thrust::make_zip_iterator(placeToCopyAgentLengths.end(), agentLocationBeforeMovement.end())
-                            , agentListWithPairs.begin()
-                            , [] HD (const thrust::tuple<unsigned, unsigned>& values) {
-                                // location first and agent index second
-                                return thrust::make_pair<unsigned, unsigned>(thrust::get<1>(values), thrust::get<0>(values));
-                            });
-    }*/
         struct ZipComparator
 {
     __host__ __device__
@@ -35,10 +26,10 @@
 };
     PostMovement::PostMovement(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside, unsigned locations,unsigned print_on)
                     : generatorHelper(agents*0.8)
-                    , offset1((locations/2) + 1)
-                    , offset2((locations/2) + 1)
-                    , movement1(static_cast<unsigned>(agents*0.8))
-                    , movement2(static_cast<unsigned>(agents*0.8))
+                  //  , offset1((locations/2) + 1)
+                  //  , offset2((locations/2) + 1)
+                    , movement1(static_cast<unsigned>(agents/NUM_OF_CITIES*1.2))
+                    , movement2(static_cast<unsigned>(agents/NUM_OF_CITIES*1.2))
                     , flags(agents)
                     , scanResult(agents)
                     , copyOfPairs(agents)
@@ -62,27 +53,27 @@
         std::random_device rd{};
         std::mt19937_64 generator{1};
         //srand((unsigned) time(0));
-        std::uniform_int_distribution<unsigned> randomLocation{0, (locations - 1)/2};
+        std::uniform_int_distribution<unsigned> randomLocation{0, (locations / NUM_OF_CITIES) - 1};
         auto getRandomLocation = [&]() -> unsigned { return randomLocation(generator); };
         std::uniform_real_distribution<decltype(movedRatioOutside)> randomUnit{0.0, 1.0}; 
         auto t01 = std::chrono::high_resolution_clock::now();
         for(unsigned i=0;i<NUM_OF_CITIES;i++){//reserving memory 
-            locationAgentLists[i].reserve(agents*0.8);
-            hostAgentLocations[i].reserve(agents*0.8);
-            offsets[i].reserve((locations/2) + 1);
-            placeToCopyAgentLengths[i].reserve(agents*0.8);
-            hostMovements[i].reserve(agents*0.8);
-            hostexChangeAgents[i].reserve(agents*0.8);
-            exChangeAgents[i].reserve(agents*0.8);
+            locationAgentLists[i].reserve(agents/NUM_OF_CITIES*1.2);
+            hostAgentLocations[i].reserve(agents/NUM_OF_CITIES*1.2);
+            offsets[i].resize((locations/NUM_OF_CITIES) + 1);
+            placeToCopyAgentLengths[i].reserve(agents/NUM_OF_CITIES*1.2);
+            hostMovements[i].reserve(agents/NUM_OF_CITIES*1.2);
+            hostexChangeAgents[i].reserve(agents/NUM_OF_CITIES*1.2);
+            exChangeAgents[i].reserve(agents/NUM_OF_CITIES*1.2);
             offsetForExChangeAgents[i].reserve(NUM_OF_CITIES+1);
             offsetForExChangeAgents[i].resize(NUM_OF_CITIES+1);
-            exchangeHelperVectors[i].reserve(agents*0.8);
-            stayedAngentsHelperVectors[i].reserve(agents*0.8);
-            IncomingAgents[i].reserve(agents*0.8);
-            hostIncomingAgents[i].reserve(agents*0.8);
-            agentLocationAfterMovements[i].reserve(agents*0.8);
+            exchangeHelperVectors[i].reserve(agents/NUM_OF_CITIES*1.2);
+            stayedAngentsHelperVectors[i].reserve(agents/NUM_OF_CITIES*1.2);
+            IncomingAgents[i].reserve(agents/NUM_OF_CITIES*1.2);
+            hostIncomingAgents[i].reserve(agents/NUM_OF_CITIES*1.2);
+            agentLocationAfterMovements[i].reserve(agents/NUM_OF_CITIES*1.2);
         }
-        generatorHelper.reserve(agents*0.8);
+        generatorHelper.reserve(agents/NUM_OF_CITIES*1.2);
         std::vector<unsigned> vector_sizes(NUM_OF_CITIES);
        
         
@@ -127,20 +118,20 @@
                 thrust::transform(generatorHelper.begin(), generatorHelper.end(), locationAgentLists[i].begin(), [i] (unsigned loc) {
                     return thrust::make_tuple(i, loc);
                 });
-
-                thrust::sequence(offset1.begin(), offset1.end());
-                thrust::transform(offset1.begin(),offset1.end(), offset1.begin(), [&] (const auto& loc)  {
+              //  std::cout<<offsets[i].size()<<"\n";
+                thrust::sequence(offsets[i].begin(), offsets[i].end());
+                thrust::transform(offsets[i].begin(),offsets[i].end(), offsets[i].begin(), [&] (const auto& loc)  {
                     return (thrust::count(hostAgentLocations[i].begin(), hostAgentLocations[i].end(), loc));
                 });
              //   thrust::copy(offset1.begin(), offset1.end(), std::ostream_iterator<unsigned>(std::cout, " "));
 
-                thrust::exclusive_scan(offset1.begin(), offset1.end(), offset1.begin());
+                thrust::exclusive_scan(offsets[i].begin(), offsets[i].end(), offsets[i].begin());
                     // offset1 = hostOffset1;
              //   std::cout << "Generated offset1\n ";
-                thrust::copy(offset1.begin(), offset1.end(), offsets[i].begin());
+              //  thrust::copy(offset1.begin(), offset1.end(), offsets[i].begin());
              //   thrust::copy(offset1.begin(), offset1.end(), std::ostream_iterator<unsigned>(std::cout, " "));
              //   std::cout << "\n";
-                offsets[i]=offset1;
+              //  offsets[i]=offset1;
 
             }
             auto t2 = std::chrono::high_resolution_clock::now();
@@ -351,8 +342,10 @@
                     if(print_on)
                         std::cout << " ID " <<id << "  loc "<<  loc;  
                 }
-                if(print_on)
+               //  std::cout<<"\n currently in city"<<i<<" "<< agentLocationAfterMovements[i].size()<<"\n";
+                if(print_on){
                     std::cout<<"\n";
+                }
                 
                 //prepare vectors for new loop
                 //firstly the hostAgentLocation and the IDs:
@@ -380,9 +373,7 @@
                     thrust::copy(hostAgentLocations[i].begin(), hostAgentLocations[i].end(), std::ostream_iterator<unsigned>(std::cout, "\t"));
                     std::cout<<"\n";
                 
-                
             
-
                      std::cout<<"\n \n";
                 }          
 
