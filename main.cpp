@@ -13,26 +13,11 @@
 #include "thrust/sort.h"
 #include <thrust/system/system_error.h>
 
-// std::array<std::pair<unsigned, double>, 8> cases = {{{1000, 0.01}, {1000, 0.1}, {10000, 0.01}, {10000, 0.1},
-                                                    // {20000, 0.01}, {20000, 0.1}, {50000, 0.01}, {50000, 0.1}}};
-
 
 constexpr double agentLocRatio = 2.25;
 
 
-/*std::tuple<unsigned, unsigned, double, double> getbenchmarkStateInfo(int numOfCities = 1 , int  numOfIterations = 1, int numOfAgents = 100, double movedRatioInside = 0.25, double  MO = 0.05) {
-    auto agents = static_cast<unsigned>(NUM_OF_AGENTS);
-    auto movedRatioInside = static_cast<double>(movedRatioOutside_);
-    auto movedRatioOutside = 1.0 / (10 * static_cast<double>(20));
-    auto locs = static_cast<unsigned>(static_cast<double>(agents) / agentLocRatio);
-    return std::make_tuple(NUM_OF_CITIES, NUM_OF_ITERATIONS, agents, locs, movedRatioInside, movedRatioOutside);
-}
 
-static void benchDirectSort() {
-    auto[NUM_OF_CITIES, NUM_OF_ITERATIONS, agents, locs, movedRatioInside, movedRatioOutside] = getbenchmarkStateInfo();
-    PostMovement p(NUM_OF_CITIES, NUM_OF_ITERATIONS, agents, locs, movedRatioInside, movedRatioOutside);
-  
-}*/
 int main(int argc, char* argv[]) {
     std::stringstream str;
     str << argv[1];
