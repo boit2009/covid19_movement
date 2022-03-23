@@ -43,7 +43,7 @@ std::vector<thrust::device_vector<unsigned>>&hostAgentLocations,
 std::vector<thrust::device_vector<unsigned>> &offsets,
 std::vector<thrust::device_vector<unsigned>>placeToCopyAgentLengths,
 std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>>> &hostMovements,
-std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>>> &hostexChangeAgents,
+std::vector<thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned>>> &hostexChangeAgents,
 std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>>> &exChangeAgents,
 std::vector<thrust::device_vector<unsigned>> &offsetForExChangeAgents,
 std::vector<unsigned> &movedAgentSizeFromCities,
@@ -155,7 +155,7 @@ unsigned locationNumberPerCity = (locations / NUM_OF_CITIES) - 1;
             thrust::transform(thrust::make_zip_iterator(thrust::make_tuple(agentIDs[i].begin(), hostAgentLocations[i].begin()))
                             , thrust::make_zip_iterator(thrust::make_tuple(agentIDs[i].end(), hostAgentLocations[i].end()))
                             , hostMovements[i].begin()
-                            , [i, movedRatioOutside, movedRatioInside, NUM_OF_CITIES, locationNumberPerCity]  __host__ __device__ (thrust::tuple<unsigned, unsigned> idLocPair)  {
+                            , [i, movedRatioOutside, movedRatioInside, NUM_OF_CITIES, locationNumberPerCity]  __host__ __device__ (thrust::tuple<unsigned&, unsigned&> idLocPair)  {
                 unsigned idx = thrust::get<0>(idLocPair);
                 unsigned loc = thrust::get<1>(idLocPair);
                 unsigned generatedRandom = RandomGenerator::randomUnit();
@@ -240,7 +240,7 @@ unsigned locationNumberPerCity = (locations / NUM_OF_CITIES) - 1;
                         exChangeAgents[i].begin()))
                         ,thrust::make_zip_iterator(thrust::make_tuple(
                         cityIndex.end(),
-                        exChangeAgents[i].end())),[] __host__ __device__ (thrust::tuple<unsigned&, thrust::tuple<unsigned, unsigned,unsigned>&> tup) {
+                        exChangeAgents[i].end())),[] __host__ __device__ (thrust::tuple<unsigned&, thrust::tuple<unsigned, unsigned, unsigned>&> tup) {
                             thrust::tuple<unsigned, unsigned, unsigned> &movement =thrust::get<1>(tup);
                             thrust::get<0>(tup) = thrust::get<2>(movement);//put the city indexes into cityIndex array
                             
@@ -250,14 +250,17 @@ unsigned locationNumberPerCity = (locations / NUM_OF_CITIES) - 1;
             thrust::lower_bound(cityIndex.begin(),cityIndex.end(),offsetForExChangeAgents[i].begin(),
             offsetForExChangeAgents[i].end(),offsetForExChangeAgents[i].begin());
             
-            /*if(print_on){
+            if(print_on){
                  hostexChangeAgents[i] = exChangeAgents[i]; // to be able to print, this can be removed later
                 std::cout << "After sorting: Agents moving from "<< i+1 << "st city :"<< movedAgentSizeFromCities[i] <<"\n ";
                 for(unsigned  j =0;j<  hostexChangeAgents[i].size();j++){
-                    std::cout<<  " ID" <<thrust::get<0>(hostexChangeAgents[i][j]) << " city " << thrust::get<2>(hostexChangeAgents[i][j])<< " loc " << thrust::get<1>(hostexChangeAgents[i][j]);
+                    unsigned id =thrust::get<0>(hostexChangeAgents[i][j]);
+                    unsigned city =thrust::get<2>(hostexChangeAgents[i][j]);
+                    unsigned loc =thrust::get<1>(hostexChangeAgents[i][j]);
+                    std::cout<<  " ID" <<id << " city " << city<< " loc " << loc;
                 }
                 std::cout << "\n";
-            }*/
+            }
         } // in the end we have the exchanging arrays and the exchanging offset array
         auto t6 = std::chrono::high_resolution_clock::now(); 
         sorting_merging_arrays_after_movement += std::chrono::duration_cast<std::chrono::microseconds>(t6-t5).count();   
@@ -335,12 +338,12 @@ unsigned locationNumberPerCity = (locations / NUM_OF_CITIES) - 1;
             if(print_on){
                 thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned>> hostagentLocationAfterMovement1(agentLocationAfterMovements[i].size());
                 std::copy(agentLocationAfterMovements[i].begin(), agentLocationAfterMovements[i].end(), hostagentLocationAfterMovement1.begin());
-                for(unsigned j=0;j<agentLocationAfterMovements[i].size()/* vector_sizes[i]-movedAgentSizeFromCities[i]+incomingAgentsNumberToParticularCity*/;j++){
+                for(unsigned j=0;j<agentLocationAfterMovements[i].size();j++){
                     auto id = thrust::get<0>(hostagentLocationAfterMovement1[j]);
                     auto loc = thrust::get<1>(hostagentLocationAfterMovement1[j]);
                     std::cout << " ID " <<id << "  loc "<<  loc;  
                 }
-            //  std::cout<<"\n currently in city"<<i<<" "<< agentLocationAfterMovements[i].size()<<"\n";
+        
                 std::cout<<"\n";
             }
             

@@ -24,7 +24,7 @@ public:
 
     std::vector<thrust::device_vector<unsigned>>placeToCopyAgentLengths;
     std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>>> hostMovements;
-    std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>>> hostexChangeAgents;//just for printing
+    std::vector<thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned>>> hostexChangeAgents;//just for printing
     std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>>> exChangeAgents;
     std::vector<thrust::device_vector<unsigned>> offsetForExChangeAgents;
     std::vector<unsigned> movedAgentSizeFromCities;

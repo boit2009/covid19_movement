@@ -4,12 +4,20 @@
 #include <omp.h>
 #include <limits.h>
 
+#define THRUST_DEVICE_SYSTEM 2
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#error hello
 #include <cuda.h>
 #include <curand_kernel.h>
 static __device__ curandState* dstates;
 #endif
+
+#ifndef __host__
+#define __host__
+#endif
+#ifndef __device__
+#define __device__
+#endif
+
 class RandomGenerator {
     static std::vector<std::mt19937_64> generators;
 
