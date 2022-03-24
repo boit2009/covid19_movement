@@ -153,7 +153,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             thrust::transform(thrust::make_zip_iterator(thrust::make_tuple(agentIDs[i].begin(), hostAgentLocations[i].begin()))
                             , thrust::make_zip_iterator(thrust::make_tuple(agentIDs[i].end(), hostAgentLocations[i].end()))
                             , hostMovements[i].begin()
-                            , [i, movedRatioOutside, movedRatioInside, NUM_OF_CITIES, locationNumberPerCity]  __host__ __device__ (thrust::tuple<unsigned&, unsigned&> idLocPair)  {
+                            , [i, movedRatioOutside, movedRatioInside, NUM_OF_CITIES, locationNumberPerCity, print_on]  __host__ __device__ (thrust::tuple<unsigned&, unsigned&> idLocPair)  {
                 unsigned idx = thrust::get<0>(idLocPair);
                 unsigned loc = thrust::get<1>(idLocPair);
                 double generatedRandom = RandomGenerator::randomUnit();
@@ -190,6 +190,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
          for(unsigned i=0;i<NUM_OF_CITIES;i++){
             //  std::cout << "\n";   
             movedAgentSizeFromCities[i]=0;
+            
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(//ezt külön lemérni
                                     hostMovements[i].begin(),
                                     exchangeHelperVectors[i].begin(),

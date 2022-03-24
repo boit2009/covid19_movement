@@ -4,12 +4,13 @@
 #include <omp.h>
 #include <limits.h>
 
-#define THRUST_DEVICE_SYSTEM 2
+//#define THRUST_DEVICE_SYSTEM 2
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #include <cuda.h>
 #include <curand_kernel.h>
 static __device__ curandState* dstates;
 #endif
+
 
 #ifndef __host__
 #define __host__
