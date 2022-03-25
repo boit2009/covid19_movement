@@ -155,9 +155,9 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
     auto copy_incoming_agents_and_create_the_new_arrays_after_movement = 0;
     auto picking_out_stayed_exchanged_agents = 0;
 
-    auto sort_time = 0;
+    /*auto sort_time = 0;
     auto copy_time = 0;
-    auto lower_bound = 0;
+    auto lower_bound = 0;*/
 
 
     for(unsigned ITER=0;ITER<NUM_OF_ITERATIONS;ITER++){
@@ -168,15 +168,15 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             locationAgentLists[i].resize(vector_sizes[i]);
             generatorHelper.resize(vector_sizes[i]);
             hostAgentLocations[i].resize(vector_sizes[i]);  
-            auto copy_time_t1 = std::chrono::high_resolution_clock::now();                
+           // auto copy_time_t1 = std::chrono::high_resolution_clock::now();                
             thrust::copy(hostAgentLocations[i].begin(), hostAgentLocations[i].end(), placeToCopyAgentLengths[i].begin());
-            auto copy_time_t2 = std::chrono::high_resolution_clock::now();
-            copy_time+=std::chrono::duration_cast<std::chrono::microseconds>(copy_time_t2-copy_time_t1).count();
+           // auto copy_time_t2 = std::chrono::high_resolution_clock::now();
+           // copy_time+=std::chrono::duration_cast<std::chrono::microseconds>(copy_time_t2-copy_time_t1).count();
             thrust::sequence(generatorHelper.begin(), generatorHelper.end());
-            auto sort_time_t1 = std::chrono::high_resolution_clock::now();
+            //auto sort_time_t1 = std::chrono::high_resolution_clock::now();
             thrust::stable_sort_by_key(placeToCopyAgentLengths[i].begin(), placeToCopyAgentLengths[i].end(), generatorHelper.begin());
-            auto sort_time_t2 = std::chrono::high_resolution_clock::now();
-            sort_time+=std::chrono::duration_cast<std::chrono::microseconds>(sort_time_t2-sort_time_t1).count();
+           // auto sort_time_t2 = std::chrono::high_resolution_clock::now();
+           // sort_time+=std::chrono::duration_cast<std::chrono::microseconds>(sort_time_t2-sort_time_t1).count();
             if(print_on){
                 std::cout << "Generate locationagentlist \n ";
                 thrust::copy(generatorHelper.begin(), generatorHelper.end(), std::ostream_iterator<unsigned>(std::cout, " "));
@@ -186,10 +186,10 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             }
 
             thrust::sequence(offsets[i].begin(), offsets[i].end());
-            auto lower_bound_time_t1 =std::chrono::high_resolution_clock::now();
+          //  auto lower_bound_time_t1 =std::chrono::high_resolution_clock::now();
             thrust::lower_bound(placeToCopyAgentLengths[i].begin(),placeToCopyAgentLengths[i].end(),offsets[i].begin(), offsets[i].end(),offsets[i].begin());
-            auto lower_bound_time_t2 = std::chrono::high_resolution_clock::now();
-            lower_bound+=std::chrono::duration_cast<std::chrono::microseconds>(lower_bound_time_t2-lower_bound_time_t1).count();
+          //  auto lower_bound_time_t2 = std::chrono::high_resolution_clock::now();
+          //  lower_bound+=std::chrono::duration_cast<std::chrono::microseconds>(lower_bound_time_t2-lower_bound_time_t1).count();
 
            
              if (print_on){
@@ -476,9 +476,9 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
     std::cout<<"copy_incoming_agents_and_create_the_new_arrays_after_movement took "<<copy_incoming_agents_and_create_the_new_arrays_after_movement<< " microseconds\n";
 
 
-    std::cout<<"copy_time took "<<copy_time<< " microseconds\n";
+    /*std::cout<<"copy_time took "<<copy_time<< " microseconds\n";
     std::cout<<"lower_bound_time took "<<lower_bound<< " microseconds\n";
-    std::cout<<"sort_time took "<<sort_time<< " microseconds\n";
+    std::cout<<"sort_time took "<<sort_time<< " microseconds\n";*/
 
 
 }
