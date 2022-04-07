@@ -16,6 +16,7 @@
 #include "thrust/iterator/permutation_iterator.h"
 #include <thrust/binary_search.h>
 #include "randomGenerator.h"
+#include "nvToolsExt.h"
 #ifndef __host__
 #define __host__
 #endif
@@ -76,9 +77,6 @@ void RandomGenerator::resize(unsigned agents) {
     }
 }
 
-/*unsigned getRandomLocation(std::mt19937_64 &generator, std::uniform_int_distribution<unsigned> &randomLocation) {
-    return randomLocation(generator);
-}*/
 
 struct ZipComparator
 {
@@ -112,6 +110,7 @@ unsigned locationNumberPerCity = (locations / NUM_OF_CITIES) - 1;
 printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
     auto t01 = std::chrono::high_resolution_clock::now();
     for(unsigned i=0;i<NUM_OF_CITIES;i++){//reserving memory 
+        nvtxRangePushA("init_host_data");
         locationAgentLists[i].reserve(agents/NUM_OF_CITIES*1.2);
         hostAgentLocations[i].reserve(agents/NUM_OF_CITIES*1.2);
         offsets[i].resize((locations/NUM_OF_CITIES) + 1);
@@ -126,6 +125,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
         IncomingAgents[i].reserve(agents/NUM_OF_CITIES*1.2);
         hostIncomingAgents[i].reserve(agents/NUM_OF_CITIES*1.2);
         agentLocationAfterMovements[i].reserve(agents/NUM_OF_CITIES*1.2);
+        nvtxRangePop();
     }
     generatorHelper.reserve(agents/NUM_OF_CITIES*1.2);
     std::vector<unsigned> vector_sizes(NUM_OF_CITIES);
@@ -134,11 +134,15 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
     for(unsigned i=0;i<NUM_OF_CITIES;i++){//firstly generate the locations and the agentIDs
         vector_sizes[i]= agents/NUM_OF_CITIES;
         agentIDs[i].resize(vector_sizes[i]);
+        nvtxRangePushA("genereate_sequences");
         thrust::sequence(agentIDs[i].begin(), agentIDs[i].end(), 0 + i *  vector_sizes[i]);
+        nvtxRangePop();
         hostAgentLocations[i].resize(vector_sizes[i]);
+        nvtxRangePushA("genereate_random locations");
         thrust::generate(hostAgentLocations[i].begin(), hostAgentLocations[i].end(), [locationNumberPerCity] __host__ __device__(){
            return RandomGenerator::randomUnsigned(locationNumberPerCity);
         });
+        nvtxRangePop();
         if(print_on){
             std::cout << "\n Generated locations\n ";
             thrust::copy(hostAgentLocations[i].begin(), hostAgentLocations[i].end(), std::ostream_iterator<unsigned>(std::cout, " "));
@@ -168,13 +172,18 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             locationAgentLists[i].resize(vector_sizes[i]);
             generatorHelper.resize(vector_sizes[i]);
             hostAgentLocations[i].resize(vector_sizes[i]);  
-           // auto copy_time_t1 = std::chrono::high_resolution_clock::now();                
+            nvtxRangePushA("copy_the_host_agent_locations_to_copy_array_in_the_beginning");             
             thrust::copy(hostAgentLocations[i].begin(), hostAgentLocations[i].end(), placeToCopyAgentLengths[i].begin());
+            nvtxRangePop();
            // auto copy_time_t2 = std::chrono::high_resolution_clock::now();
            // copy_time+=std::chrono::duration_cast<std::chrono::microseconds>(copy_time_t2-copy_time_t1).count();
+            nvtxRangePushA("sequence_generation_before_sorting_in_the_beginning"); 
             thrust::sequence(generatorHelper.begin(), generatorHelper.end());
+            nvtxRangePop();
             //auto sort_time_t1 = std::chrono::high_resolution_clock::now();
+            nvtxRangePushA("sorting_arrays_in_the_beginning"); 
             thrust::stable_sort_by_key(placeToCopyAgentLengths[i].begin(), placeToCopyAgentLengths[i].end(), generatorHelper.begin());
+            nvtxRangePop();
            // auto sort_time_t2 = std::chrono::high_resolution_clock::now();
            // sort_time+=std::chrono::duration_cast<std::chrono::microseconds>(sort_time_t2-sort_time_t1).count();
             if(print_on){
@@ -184,10 +193,13 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                 thrust::copy(placeToCopyAgentLengths[i].begin(), placeToCopyAgentLengths[i].end(), std::ostream_iterator<unsigned>(std::cout, " "));
                 std::cout << "\n";
             }
-
+            nvtxRangePushA("sequence_generation_before_lower_bound_in_the_beginning"); 
             thrust::sequence(offsets[i].begin(), offsets[i].end());
+            nvtxRangePop();
           //  auto lower_bound_time_t1 =std::chrono::high_resolution_clock::now();
+            nvtxRangePushA("lower_bound_time_in_the_beginning"); 
             thrust::lower_bound(placeToCopyAgentLengths[i].begin(),placeToCopyAgentLengths[i].end(),offsets[i].begin(), offsets[i].end(),offsets[i].begin());
+            nvtxRangePop();
           //  auto lower_bound_time_t2 = std::chrono::high_resolution_clock::now();
           //  lower_bound+=std::chrono::duration_cast<std::chrono::microseconds>(lower_bound_time_t2-lower_bound_time_t1).count();
 
@@ -210,12 +222,12 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             agentIDs[i].resize(vector_sizes[i]);
             exchangeHelperVectors[i].resize(vector_sizes[i]);
             stayedAngentsHelperVectors[i].resize(vector_sizes[i]);
+            nvtxRangePushA("fill_helper_vectos_with_zeros"); 
             thrust::fill(exchangeHelperVectors[i].begin(), exchangeHelperVectors[i].end(), 0);
-           /* for (int j=0;j<exchangeHelperVectors[i].size();j++){
-                 printf("j %d  és value %d \n", j,exchangeHelperVectors[i][j] );
-            }*/
-            thrust::fill(stayedAngentsHelperVectors[i].begin(), stayedAngentsHelperVectors[i].end(), 0);
+            thrust::fill(stayedAngentsHelperVectors[i].begin(), stayedAngentsHelperVectors[i].end(), 0);                       
+            nvtxRangePop();
             hostMovements[i].resize(vector_sizes[i]);
+            nvtxRangePushA("generate_the_random_movement");
             thrust::transform(thrust::make_zip_iterator(thrust::make_tuple(agentIDs[i].begin(), hostAgentLocations[i].begin()))
                             , thrust::make_zip_iterator(thrust::make_tuple(agentIDs[i].end(), hostAgentLocations[i].end()))
                             , hostMovements[i].begin()
@@ -233,7 +245,6 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                     if (NUM_OF_CITIES != 1)
                         while(where_to_go == i) { where_to_go = 0 + ( RandomGenerator::randomUnsigned(NUM_OF_CITIES)); }
                     unsigned newLoc =  RandomGenerator::randomUnsigned(locationNumberPerCity);
-                    //while(newLoc == loc) { newLoc =  RandomGenerator::randomUnsigned(locationNumberPerCity); }
                     return thrust::make_tuple(idx ,newLoc, where_to_go);
                     }       
                 
@@ -248,16 +259,17 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                     return thrust::make_tuple(idx, loc, i);
                 }
             });
+            nvtxRangePop();
         }
         auto t4 = std::chrono::high_resolution_clock::now();
         movement_time += std::chrono::duration_cast<std::chrono::microseconds>(t4-t3).count(); 
         auto t4_1 = std::chrono::high_resolution_clock::now(); 
              
-         for(unsigned i=0;i<NUM_OF_CITIES;i++){
+        for(unsigned i=0;i<NUM_OF_CITIES;i++){
             //  std::cout << "\n";   
             movedAgentSizeFromCities[i]=0;
-            
-            thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(//ezt külön lemérni
+            nvtxRangePushA("fill_the_helper_vectors_based_on_the_movement");
+            thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(
                                     hostMovements[i].begin(),
                                     exchangeHelperVectors[i].begin(),
                                     stayedAngentsHelperVectors[i].begin())),
@@ -274,7 +286,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                     thrust::get<2>(tup)=1;
                 }
             }); 
-
+            nvtxRangePop();
        /* for (int j=0;j<exchangeHelperVectors[i].size();j++){//print which index leave the city
             std::cout<< " ind " <<j;
             std::cout<< " val " <<exchangeHelperVectors[i][j];
@@ -295,11 +307,14 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
          
         for(unsigned i=0;i<NUM_OF_CITIES;i++){
             unsigned exchangedAgents= exchangeHelperVectors[i][hostMovements[i].size()-1];
+            nvtxRangePushA("exclusive_scan_with_exchange_helper_vectors");
             thrust::exclusive_scan(exchangeHelperVectors[i].begin(), exchangeHelperVectors[i].end(), exchangeHelperVectors[i].begin());
+            nvtxRangePop();
             movedAgentSizeFromCities[i] = exchangedAgents + exchangeHelperVectors[i][hostMovements[i].size()-1]; //to know how many agent left city
             exChangeAgents[i].resize(movedAgentSizeFromCities[i]);
             if(print_on)
                 hostexChangeAgents[i].resize(movedAgentSizeFromCities[i]);
+            nvtxRangePushA("put_leaving_agents_into_exchangeagents");
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(// this for each will put the leaving agents into the exChangeAgents[i].
                         hostMovements[i].begin(),
                         thrust::make_permutation_iterator(exChangeAgents[i].begin(), exchangeHelperVectors[i].begin()))),
@@ -316,12 +331,15 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                         thrust::get<1>(tup)= thrust::make_tuple<unsigned, unsigned, unsigned>(id,loc,city); //put the values to exchangeagents
                         //thrust::get<0>(tup) = thrust::make_tuple(UINT_MAX ,UINT_MAX, UINT_MAX); // zero the values in the original hostMovement array
                     }
-                });
+            });
+            nvtxRangePop();
             if(print_on)
                 hostexChangeAgents[i] = exChangeAgents[i]; // to be able to print, this can be removed later
-
+            nvtxRangePushA("stable_sort_on_exchange_agnets");
             thrust::stable_sort(exChangeAgents[i].begin(),exChangeAgents[i].end(), ZipComparator()); //sort the exchanging array by city
+            nvtxRangePop();
             thrust::device_vector<unsigned>cityIndex(exChangeAgents[i].size());
+            nvtxRangePushA("pull_out_the_needed_city_indexes");
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(
                         cityIndex.begin(),
                         exChangeAgents[i].begin()))
@@ -332,10 +350,14 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                             thrust::get<0>(tup) = thrust::get<2>(movement);//put the city indexes into cityIndex array
                             
                 });
-
+            nvtxRangePop();
+            nvtxRangePushA("sequence_before_offsetForExChangeAgents_lower_bound");
             thrust::sequence(offsetForExChangeAgents[i].begin(), offsetForExChangeAgents[i].end());
+            nvtxRangePop();
+            nvtxRangePushA("lower_bound_on_offsetForExChangeAgents");
             thrust::lower_bound(cityIndex.begin(),cityIndex.end(),offsetForExChangeAgents[i].begin(),
             offsetForExChangeAgents[i].end(),offsetForExChangeAgents[i].begin());
+            nvtxRangePop();
             
             if(print_on){
                  hostexChangeAgents[i] = exChangeAgents[i]; // to be able to print, this can be removed later
@@ -362,8 +384,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             for (unsigned city = 0;city<NUM_OF_CITIES;city++){
                 unsigned from = offsetForExChangeAgents[city][i];
                 unsigned to = offsetForExChangeAgents[city][i+1];
-                incomingAgentsNumberToParticularCity+=(to-from);
-                
+                incomingAgentsNumberToParticularCity+=(to-from);         
             }
             if(print_on)
                 std::cout<<"incomingAgentsNumberToParticularCity "<<incomingAgentsNumberToParticularCity<<"\n";
@@ -375,16 +396,18 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                 unsigned to=offsetForExChangeAgents[city][i+1];
                 if(print_on)
                     std::cout<<"from city "<<city<<" to city "<< i <<" start: "<<from <<" end : "<<to<<"\n";
+                nvtxRangePushA("put_the_incoming_agents_into_IncomingAgents_array");
                 thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(
-                                exChangeAgents[city].begin()+from,
-                                IncomingAgents[i].begin()+numberOfAgentsPutToIncomingAgents)),
-                                thrust::make_zip_iterator(thrust::make_tuple(
-                                exChangeAgents[city].begin()+to,
-                                IncomingAgents[i].begin()+numberOfAgentsPutToIncomingAgents+to-from))
-                                ,[] __host__ __device__ ( thrust::tuple< thrust::tuple<unsigned, unsigned, unsigned>&,  thrust::tuple<unsigned, unsigned, unsigned>&> tup) {                     
-                            thrust::get<1>(tup)=thrust::get<0>(tup);
+                    exChangeAgents[city].begin()+from,
+                    IncomingAgents[i].begin()+numberOfAgentsPutToIncomingAgents)),
+                    thrust::make_zip_iterator(thrust::make_tuple(
+                    exChangeAgents[city].begin()+to,
+                    IncomingAgents[i].begin()+numberOfAgentsPutToIncomingAgents+to-from))
+                    ,[] __host__ __device__ ( thrust::tuple< thrust::tuple<unsigned, unsigned, unsigned>&,  thrust::tuple<unsigned, unsigned, unsigned>&> tup) {                     
+                        thrust::get<1>(tup)=thrust::get<0>(tup);
                             
-                        });
+                });
+                nvtxRangePop();
 
                 numberOfAgentsPutToIncomingAgents+=to-from;
 
@@ -394,7 +417,10 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
 
              //the new size will be the original size - left agents size + incoming agents size
             agentLocationAfterMovements[i].resize(vector_sizes[i]-movedAgentSizeFromCities[i]+incomingAgentsNumberToParticularCity);
+            nvtxRangePushA("exclusive_scan_on_stayed_helper_vector");
             thrust::exclusive_scan(stayedAngentsHelperVectors[i].begin(), stayedAngentsHelperVectors[i].end(), stayedAngentsHelperVectors[i].begin());
+            nvtxRangePop();
+            nvtxRangePushA("put_the_stayed_agents_into_agentLocationAfterMovements");
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(//put the stayed agents into the agentLocationAfterMovements[i]
                             hostMovements[i].begin(),
                             thrust::make_permutation_iterator(agentLocationAfterMovements[i].begin(), stayedAngentsHelperVectors[i].begin()))),
@@ -409,7 +435,8 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                         thrust::get<1>(tup)= thrust::make_tuple<unsigned, unsigned,unsigned>(id,loc,city);
         
                     });
-                    
+            nvtxRangePop();
+            nvtxRangePushA("put_the_incoming_agents_into_agentLocationAfterMovements");    
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(//this will put the incoming agents to the end of the agentLocationAfterMovements[i]
                 agentLocationAfterMovements[i].begin()+vector_sizes[i]-movedAgentSizeFromCities[i],
                 IncomingAgents[i].begin())),
@@ -419,6 +446,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                 ,[] __host__ __device__ (thrust::tuple< thrust::tuple<unsigned, unsigned, unsigned>&,thrust::tuple<unsigned, unsigned,unsigned>&> tup) {                     
                     thrust::get<0>(tup)=thrust::get<1>(tup);
             });
+            nvtxRangePop();
 
 
             //this is only needed for printing
@@ -440,6 +468,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             vector_sizes[i]=agentLocationAfterMovements[i].size();
             agentIDs[i].resize(vector_sizes[i]);
             hostAgentLocations[i].resize(vector_sizes[i]);
+            nvtxRangePushA("copy_the_needed_information_to_agentIDs_and_hostAgentLocations_arrays");
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(
                             agentIDs[i].begin(),
                             hostAgentLocations[i].begin(),
@@ -454,6 +483,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                     thrust::get<1>(tup) = thrust::get<1>(movement);
                 
                 });
+            nvtxRangePop();
             if(print_on){
                 std::cout<<"ids and locations after movement"<<"\n";
                 thrust::copy(agentIDs[i].begin(), agentIDs[i].end(), std::ostream_iterator<unsigned>(std::cout, "\t"));
