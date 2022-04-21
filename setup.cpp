@@ -135,10 +135,6 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
     generatorHelper.reserve(agents/NUM_OF_CITIES*1.2);
     unsigned vector_size;
     
-    //initelem az mpi-t
-    //mpirun -np 8 és a neve a programnak
-    //lekérem a ranket
-
     
     
     //firstly generate the locations and the agentIDs
@@ -182,10 +178,10 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
      //   nvtxRangePushA("copy_the_host_agent_locations_to_copy_array_in_the_beginning");             
         thrust::copy(hostAgentLocation.begin(), hostAgentLocation.end(), placeToCopyAgentLength.begin());
      //   nvtxRangePop();
-//nvtxRangePushA("sequence_generation_before_sorting_in_the_beginning"); 
+     //nvtxRangePushA("sequence_generation_before_sorting_in_the_beginning"); 
         thrust::sequence(generatorHelper.begin(), generatorHelper.end());
-//nvtxRangePop();
-//nvtxRangePushA("sorting_arrays_in_the_beginning"); 
+    //nvtxRangePop();
+    //nvtxRangePushA("sorting_arrays_in_the_beginning"); 
         thrust::stable_sort_by_key(placeToCopyAgentLength.begin(), placeToCopyAgentLength.end(), generatorHelper.begin());
     //    nvtxRangePop();
         if(print_on){
@@ -352,7 +348,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
        unsigned *incoming_agents_array = new unsigned[NUM_OF_CITIES];//felszabadítani
         for(unsigned j = 0; j < NUM_OF_CITIES;j++){
             if(j !=rank){
-                unsigned number_of_sent_agents = offsetForExChangeAgent[j+1] - offsetForExChangeAgent[j]; //ennyi darabot szeretnék küldeni
+                unsigned number_of_sent_agents = offsetForExChangeAgent[j+1] - offsetForExChangeAgent[j]; 
                 MPI_Isend(&number_of_sent_agents, 1, MPI_UNSIGNED, j, rank, MPI_COMM_WORLD, &requests[2*counter + 0]);
                 MPI_Irecv(&incoming_agents_array[j], 1, MPI_UNSIGNED, j, j, MPI_COMM_WORLD, &requests[2*counter + 1]);
                 counter++;
@@ -365,8 +361,6 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             }
         }
         
-
-        //thrust::host_vector<thrust::tuple<unsigned,unsigned,unsigned>> incomingAgent_cpu(incomingAgentsNumberToParticularCity*3);
         hostIncomingAgent.resize(incomingAgentsNumberToParticularCity);
         counter=0;
         for(unsigned j = 0; j < NUM_OF_CITIES;j++){
@@ -384,12 +378,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             }
         }
         MPI_Waitall(2*NUM_OF_CITIES - 2, &requests[0], MPI_STATUSES_IGNORE); 
-        //for j loop 0-> városok száma
-        //ha az index nem a saját városom indexe
-        //(mpi_send exchangagentts[i] offseten belül[j]-től [j+1]ig küldjél agenteket)
-        //előtte h mennyit fogok küldeni, aztán
-        //exChangeAgents[i][offsetForExChangeAgents[i][j] … offsetForExChangeAgents[i][j+1]]
-        //isend, irecieve(non blockingal)
+        delete incoming_agents_array;
         if(print_on){
                 hostexChangeAgent = exChangeAgent; // to be able to print, this can be removed later
             std::cout << "After sorting: Agents moving from "<< rank+1 << "st city :"<< movedAgentSizeFromCity <<"\n ";
@@ -418,33 +407,9 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             std::cout<<"incomingAgentsNumberToParticularCity "<<incomingAgentsNumberToParticularCity<<"\n";
 
         IncomingAgent.resize(incomingAgentsNumberToParticularCity);
-        //unsigned numberOfAgentsPutToIncomingAgents=0;
-        // ez itt pedig reciveletem konkrétan oda, ahova majd itt lejjebb beteszem az mpi majd be is teszi, nem kell konlrétan még másolási lépés is
-        /*for (unsigned city =0;city<NUM_OF_CITIES;city++){// copy IncomingAgents 
-            unsigned from =offsetForExChangeAgents[city][i];
-            unsigned to=offsetForExChangeAgents[city][i+1];
-            if(print_on)
-                std::cout<<"from city "<<city<<" to city "<< i <<" start: "<<from <<" end : "<<to<<"\n";
-            nvtxRangePushA("put_the_incoming_agents_into_IncomingAgents_array");
-            thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(
-                exChangeAgents[city].begin()+from,
-                IncomingAgents[i].begin()+numberOfAgentsPutToIncomingAgents)),
-                thrust::make_zip_iterator(thrust::make_tuple(
-                exChangeAgents[city].begin()+to,
-                IncomingAgents[i].begin()+numberOfAgentsPutToIncomingAgents+to-from))
-                ,[] __host__ __device__ ( thrust::tuple< thrust::tuple<unsigned, unsigned, unsigned>&,  thrust::tuple<unsigned, unsigned, unsigned>&> tup) {                     
-                    thrust::get<1>(tup)=thrust::get<0>(tup);
-                        
-            });
-            nvtxRangePop();
-
-            numberOfAgentsPutToIncomingAgents+=to-from;
-
-        
-        }*/
 
 
-            //the new size will be the original size - left agents size + incoming agents size
+        //the new size will be the original size - left agents size + incoming agents size
         agentLocationAfterMovement.resize(vector_size-movedAgentSizeFromCity+incomingAgentsNumberToParticularCity);
   //      nvtxRangePushA("exclusive_scan_on_stayed_helper_vector");
         thrust::exclusive_scan(stayedAngentsHelperVector.begin(), stayedAngentsHelperVector.end(), stayedAngentsHelperVector.begin());
@@ -542,6 +507,8 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
     std::cout<<"sorting_merging_arrays_after_movement took "<<sorting_merging_arrays_after_movement<< " microseconds\n";
     std::cout<<"copy_incoming_agents_and_create_the_new_arrays_after_movement took "<<copy_incoming_agents_and_create_the_new_arrays_after_movement<< " microseconds\n";
 
+    delete requests;
+
 
 
 
@@ -549,21 +516,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
 PostMovement::PostMovement(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
  unsigned locations,unsigned print_on, unsigned rank, unsigned size)
                 : generatorHelper(agents/NUM_OF_CITIES*1.2)
-                /*, agentIDs(NUM_OF_CITIES)
-                ,locationAgentLists(NUM_OF_CITIES)
-                ,hostAgentLocations(NUM_OF_CITIES)
-                ,offsets(NUM_OF_CITIES)
-                ,placeToCopyAgentLengths(NUM_OF_CITIES)
-                ,hostMovements(NUM_OF_CITIES)
-                ,hostexChangeAgents(NUM_OF_CITIES)
-                ,exChangeAgents(NUM_OF_CITIES)
-                ,offsetForExChangeAgents(NUM_OF_CITIES)
-                ,movedAgentSizeFromCities(NUM_OF_CITIES)
-                ,exchangeHelperVectors(NUM_OF_CITIES)
-                ,stayedAngentsHelperVectors(NUM_OF_CITIES)
-                ,IncomingAgents(NUM_OF_CITIES)
-                ,hostIncomingAgents(NUM_OF_CITIES)
-                ,agentLocationAfterMovements(NUM_OF_CITIES)*/ {//Ezekkel mi legyen? törlöm
+                 {
 
                 helperFunction(NUM_OF_CITIES,NUM_OF_ITERATIONS,agents,movedRatioInside,movedRatioOutside,locations,print_on,
                 generatorHelper,agentID,locationAgentList,hostAgentLocation,offset,placeToCopyAgentLength,hostMovement,hostexChangeAgent,
