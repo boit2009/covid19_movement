@@ -277,7 +277,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                                 exchangeHelperVector.end(),
                                 stayedAngentsHelperVector.end())),
                                 [rank] __host__ __device__ ( thrust::tuple<thrust::tuple<unsigned, unsigned, unsigned>&, unsigned&, unsigned&> tup) {
-            thrust::tuple<unsigned, unsigned,unsigned> hostmovement =thrust::get<0>(tup);                        
+            thrust::tuple<unsigned, unsigned, unsigned> hostmovement = thrust::get<0>(tup);                        
             unsigned city =thrust::get<2>(hostmovement);
             if (city != rank){//find out which agent will leave the city
                 thrust::get<1>(tup)=1;
@@ -293,7 +293,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
         auto t5 = std::chrono::high_resolution_clock::now(); 
          
         
-        unsigned exchangedAgents= exchangeHelperVector[hostMovement.size()-1];
+        unsigned exchangedAgents = exchangeHelperVector[hostMovement.size()-1];
    //     nvtxRangePushA("exclusive_scan_with_exchange_helper_vectors");
         thrust::exclusive_scan(exchangeHelperVector.begin(), exchangeHelperVector.end(), exchangeHelperVector.begin());
   //      nvtxRangePop();
@@ -456,12 +456,18 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                         thrust::make_zip_iterator(thrust::make_tuple(
                         hostMovement.end(),
                         thrust::make_permutation_iterator(agentLocationAfterMovement.begin(), stayedAngentsHelperVector.end()))),
-                [] __host__ __device__ ( thrust::tuple< thrust::tuple<unsigned, unsigned, unsigned>&,thrust::tuple<unsigned, unsigned,unsigned>&> tup) {
-                    thrust::tuple<unsigned, unsigned,unsigned> hostmovement =thrust::get<0>(tup);  
-                    unsigned id = thrust::get<0>(hostmovement);
-                    unsigned loc = thrust::get<1>(hostmovement); 
+                [rank] __host__ __device__ ( thrust::tuple< thrust::tuple<unsigned, unsigned, unsigned>&,thrust::tuple<unsigned, unsigned,unsigned>&> tup) {
+                    thrust::tuple<unsigned,unsigned,unsigned> hostmovement =thrust::get<0>(tup);  
                     unsigned city =thrust::get<2>(hostmovement); 
-                    thrust::get<1>(tup)= thrust::make_tuple<unsigned, unsigned,unsigned>(id,loc,city);
+                    
+                     if (city == rank){
+                        unsigned id = thrust::get<0>(hostmovement);
+                        unsigned loc = thrust::get<1>(hostmovement); 
+                        thrust::get<1>(tup)= thrust::make_tuple<unsigned,unsigned,unsigned>(id,loc,city);
+                     }
+                   
+                    
+                   
     
                 });
   //      nvtxRangePop();
@@ -473,7 +479,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             thrust::make_zip_iterator(thrust::make_tuple(
             agentLocationAfterMovement.end(),
             IncomingAgent.end()))
-            ,[] __host__ __device__ (thrust::tuple< thrust::tuple<unsigned, unsigned, unsigned>&,thrust::tuple<unsigned, unsigned,unsigned>&> tup) {                     
+            ,[] __host__ __device__ (thrust::tuple< thrust::tuple<unsigned, unsigned, unsigned>&,thrust::tuple<unsigned,unsigned,unsigned>&> tup) {                     
                 thrust::get<0>(tup)=thrust::get<1>(tup);
         });
    //     nvtxRangePop();
