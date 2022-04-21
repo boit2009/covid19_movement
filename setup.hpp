@@ -17,27 +17,28 @@ public:
     
     
 
-    std::vector<thrust::device_vector<unsigned>> agentIDs;//contains the IDs in the particular city
-    std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned>>> locationAgentLists;//contains the cityID and the agent ids ordered by locations, not used
-    std::vector<thrust::device_vector<unsigned>>hostAgentLocations; // agent ids ordered by locations, this is used
-    std::vector<thrust::device_vector<unsigned>> offsets;
+    thrust::device_vector<unsigned> agentID;//contains the IDs in the particular city
+    thrust::device_vector<thrust::tuple<unsigned, unsigned>> locationAgentList;//contains the cityID and the agent ids ordered by locations, not used
+    thrust::device_vector<unsigned>hostAgentLocation; // agent ids ordered by locations, this is used
+    thrust::device_vector<unsigned> offset;
 
-    std::vector<thrust::device_vector<unsigned>>placeToCopyAgentLengths;
-    std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>>> hostMovements;
-    std::vector<thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned>>> hostexChangeAgents;//just for printing
-    std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>>> exChangeAgents;
-    std::vector<thrust::device_vector<unsigned>> offsetForExChangeAgents;
-    std::vector<unsigned> movedAgentSizeFromCities;
-    std::vector<thrust::device_vector<unsigned>> exchangeHelperVectors;
-    std::vector<thrust::device_vector<unsigned>> stayedAngentsHelperVectors;
-    std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned >>>IncomingAgents;
-    std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned >>>hostIncomingAgents;
-    std::vector<thrust::device_vector<thrust::tuple<unsigned, unsigned,unsigned>>>agentLocationAfterMovements;
-
-
+    thrust::device_vector<unsigned>placeToCopyAgentLength;
+    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>> hostMovement;
+    thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned>> hostexChangeAgent;//just for printing
+    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>> exChangeAgent;
+    thrust::device_vector<unsigned> offsetForExChangeAgent;
+    unsigned movedAgentSizeFromCity;
+    thrust::device_vector<unsigned> exchangeHelperVector;
+    thrust::device_vector<unsigned> stayedAngentsHelperVector;
+    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned >>IncomingAgent;
+    thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned >>hostIncomingAgent;
+    thrust::device_vector<thrust::tuple<unsigned, unsigned,unsigned>>agentLocationAfterMovement;
 
 
-    PostMovement(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside, unsigned locations,unsigned print_on);
+
+
+    PostMovement(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
+     unsigned locations, unsigned print_on, unsigned rank, unsigned size);
 
     void print() const;
 };
