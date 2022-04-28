@@ -38,7 +38,7 @@ public:
 
 
     PostMovement(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
-     unsigned locations, unsigned print_on, unsigned rank, unsigned size);
+     unsigned locations, unsigned print_on, unsigned rank, unsigned size, unsigned iter_exchange_number);
 
     void print() const;
 };

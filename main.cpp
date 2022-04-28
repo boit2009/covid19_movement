@@ -24,10 +24,10 @@ int main(int argc, char* argv[]) {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    if ( size != 1 && size != 2 && size != 4 && size != 8) {
+   /* if ( size != 1 && size != 2 && size != 4 && size != 8) {
         std::cout << "Must run with 1,2,4 or 8 processes\n";
         MPI_Abort(MPI_COMM_WORLD,1);
-    }
+    }*/
     
     std::stringstream str;
     str << argv[1];
@@ -45,18 +45,22 @@ int main(int argc, char* argv[]) {
     str << argv[4];
     unsigned print_on;
     str >> print_on;
+    str.clear();
+    str << argv[5];
+    unsigned iter_exchange_number;
+    str >> iter_exchange_number;
     auto movedRatioInside=static_cast<double>(0.25);
     auto movedRatioOutside=static_cast<double>(0.05);
     auto locs= static_cast<unsigned>(static_cast<double>(agents) / agentLocRatio);
     std::cout << "used parameters NUM_OF_CITIES: " << NUM_OF_CITIES << " NUM_OF_ITERATIONS: "<<NUM_OF_ITERATIONS << " agents: "<< agents<<
-    " movedRatioInside: "<< movedRatioInside << " movedRatioOutside : "<< movedRatioOutside << " locs: "<< locs << " print_on: " << print_on << "\n";
+    " movedRatioInside: "<< movedRatioInside << " movedRatioOutside : "<< movedRatioOutside << " locs: "<< locs << " print_on: " << print_on << "iter_exchange_number "<< iter_exchange_number<<"\n";
    unsigned rank2 = rank;
    unsigned size2 = size;
    if(NUM_OF_CITIES != size){
        MPI_Abort(MPI_COMM_WORLD,1);
    }
 
-   PostMovement p(NUM_OF_CITIES, NUM_OF_ITERATIONS, agents,  movedRatioInside, movedRatioOutside, locs, print_on, rank2, size2);
+   PostMovement p(NUM_OF_CITIES, NUM_OF_ITERATIONS, agents,  movedRatioInside, movedRatioOutside, locs, print_on, rank2, size2, iter_exchange_number);
 }
 
 
