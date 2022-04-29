@@ -12,10 +12,6 @@ public:
     static constexpr unsigned TO = 2;
 
     thrust::device_vector<unsigned> generatorHelper;
-//    thrust::device_vector<unsigned> offset1, offset2; // [0, 0, 2, 3, 3, 3, 4, 4, 4] #localtion_length
-
-    
-    
 
     thrust::device_vector<unsigned> agentID;//contains the IDs in the particular city
     thrust::device_vector<thrust::tuple<unsigned, unsigned>> locationAgentList;//contains the cityID and the agent ids ordered by locations, not used
@@ -35,10 +31,7 @@ public:
     thrust::device_vector<thrust::tuple<unsigned, unsigned,unsigned>>agentLocationAfterMovement;
 
 
-
-
     PostMovement(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
-     unsigned locations, unsigned print_on, unsigned rank, unsigned size, unsigned iter_exchange_number);
+    unsigned locations, unsigned print_on, unsigned rank, unsigned size, unsigned iter_exchange_number);
 
-    void print() const;
 };
