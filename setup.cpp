@@ -167,7 +167,7 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
 
     
     auto t02 = std::chrono::high_resolution_clock::now();
-    std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
+    
     
     auto update_arrays_time = 0;
     auto movement_time = 0;
@@ -547,6 +547,7 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
     auto sumtime = std::chrono::duration_cast<std::chrono::microseconds>(sum2-sum1).count();
     MPI_Finalize();
     if (print_on){
+        std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
         std::cout<<"update_arrays_time(microseconds), "<<update_arrays_time<< "\n";
         std::cout<<"movement_time(microseconds), "<<movement_time<< "\n";
         std::cout<<"picking_out_stayed_exchanged_agents(microseconds), "<<picking_out_stayed_exchanged_agents<< "\n";
@@ -559,6 +560,7 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
     }
     else{
         if(rank==0){
+            std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
             std::cout<<"update_arrays_time(microseconds), "<<update_arrays_time<< "\n";
             std::cout<<"movement_time(microseconds), "<<movement_time<< "\n";
             std::cout<<"picking_out_stayed_exchanged_agents(microseconds), "<<picking_out_stayed_exchanged_agents<< "\n";
