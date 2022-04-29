@@ -113,7 +113,7 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
 
 RandomGenerator::init(agents);
 unsigned locationNumberPerCity = (locations / NUM_OF_CITIES) - 1; 
-printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
+printf("The_locationNumberPerCity_value_is:, %d \n", locationNumberPerCity);
     auto t01 = std::chrono::high_resolution_clock::now();
     //reserving memory 
     //nvtxRangePushA("init_host_data");
@@ -166,20 +166,16 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
 
     
     auto t02 = std::chrono::high_resolution_clock::now();
-    std::cout << "Setup and memory resolution took "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< " microseconds\n";
+    std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
     
     auto update_arrays_time = 0;
     auto movement_time = 0;
-    auto sorting_merging_arrays_after_movement = 0;
-    auto copy_incoming_agents_and_create_the_new_arrays_after_movement = 0;
-    
-
     auto picking_out_stayed_exchanged_agents = 0;
-    auto exchanging_agents_with_mpi =0;
-    auto create_the_new_arrays_after_movement =0;
+    auto exchanging_agents_with_mpi = 0;
+    auto create_the_new_arrays_after_movement = 0;
     auto copying_agents_when_no_communication = 0;
     auto sorting_and_picking_exchanging_agents = 0;
-    auto copying_agents_to_agentLocationAfterMovement=0;
+    auto copying_agents_to_agentLocationAfterMovement = 0;
 
 
     auto sum1 = std::chrono::high_resolution_clock::now();
@@ -259,7 +255,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                     unsigned where_to_go=rank;
                     if (NUM_OF_CITIES != 1)
                         while(where_to_go == rank) { where_to_go = 0 + ( RandomGenerator::randomUnsigned(NUM_OF_CITIES)); }
-                    unsigned newLoc =  RandomGenerator::randomUnsigned(locationNumberPerCity);
+                    unsigned newLoc =  locationNumberPerCity-1; 
                     return thrust::make_tuple(idx ,newLoc, where_to_go);
                     }       
             
@@ -436,8 +432,6 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
 
     
         //generate the locations after the movements
-
-        //ezu
         if(print_on)
             std::cout<<"incomingAgentsNumberToParticularCity "<<incomingAgentsNumberToParticularCity<<"\n";
 
@@ -476,8 +470,11 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
             thrust::make_zip_iterator(thrust::make_tuple(
             agentLocationAfterMovement.end(),
             IncomingAgent.end()))
-            ,[] __host__ __device__ (thrust::tuple< thrust::tuple<unsigned, unsigned, unsigned>&,thrust::tuple<unsigned,unsigned,unsigned>&> tup) {                     
-                thrust::get<0>(tup)=thrust::get<1>(tup);
+            ,[locationNumberPerCity] __host__ __device__ (thrust::tuple< thrust::tuple<unsigned, unsigned, unsigned>&,thrust::tuple<unsigned,unsigned,unsigned>&> tup) {   
+                thrust::tuple<unsigned, unsigned, unsigned> incoming_agent = thrust::get<1>(tup);
+                thrust::get<1>(incoming_agent) = RandomGenerator::randomUnsigned(locationNumberPerCity);
+                unsigned newLoc =  locationNumberPerCity-1;             
+                thrust::get<0>(tup)=incoming_agent;
         });
         auto t10 = std::chrono::high_resolution_clock::now(); 
         copying_agents_to_agentLocationAfterMovement += std::chrono::duration_cast<std::chrono::microseconds>(t10-t9).count();
@@ -502,7 +499,7 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
                 auto id = thrust::get<0>(hostagentLocationAfterMovement1[j]);
                 auto loc = thrust::get<1>(hostagentLocationAfterMovement1[j]);
                 auto city = thrust::get<2>(hostagentLocationAfterMovement1[j]);
-                std::cout << " ID " <<id << " city " <<city  << "  loc "<<  loc;  
+                std::cout << " ID " <<id << " city " <<city  << " loc "<<  loc;  
             }
     
             std::cout<<"\n";
@@ -552,19 +549,32 @@ printf("The locationNumberPerCity value is : %d \n", locationNumberPerCity);
     auto sum2 = std::chrono::high_resolution_clock::now();
     auto sumtime = std::chrono::duration_cast<std::chrono::microseconds>(sum2-sum1).count();
     MPI_Finalize();
-    
-    std::cout<<"update_arrays_time took "<<update_arrays_time<< " microseconds\n";
-    std::cout<<"movement_time took "<<movement_time<< " microseconds\n";
-    std::cout<<"picking_out_stayed_exchanged_agents took "<<picking_out_stayed_exchanged_agents<< " microseconds\n";
-    std::cout<<"sorting_merging_arrays_after_movement took "<<sorting_merging_arrays_after_movement<< " microseconds\n";
-    std::cout<<"copy_incoming_agents_and_create_the_new_arrays_after_movement took "<<copy_incoming_agents_and_create_the_new_arrays_after_movement<< " microseconds\n";
+    if (print_on){
+        std::cout<<"update_arrays_time(microseconds), "<<update_arrays_time<< "\n";
+        std::cout<<"movement_time(microseconds), "<<movement_time<< "\n";
+        std::cout<<"picking_out_stayed_exchanged_agents(microseconds), "<<picking_out_stayed_exchanged_agents<< "\n";
+        std::cout<<"create_the_new_arrays_after_movement(microseconds), "<<create_the_new_arrays_after_movement<< "\n";
+        std::cout<<"exchanging_agents_with_mpi(microseconds), "<<exchanging_agents_with_mpi<< "\n";
+        std::cout<<"copying_agents_when_no_communication(microseconds), "<<copying_agents_when_no_communication<< "\n";
+        std::cout<<"sorting_and_picking_exchanging_agents(microseconds), "<<sorting_and_picking_exchanging_agents<< "\n";
+        std::cout<<"copying_agents_to_agentLocationAfterMovement(microseconds), "<<copying_agents_to_agentLocationAfterMovement<< "\n";
+        std::cout<< "sum(microseconds), "<<  sumtime<<  "\n";
+    }
+    else{
+        if(rank==0){
+            std::cout<<"update_arrays_time(microseconds), "<<update_arrays_time<< "\n";
+            std::cout<<"movement_time(microseconds), "<<movement_time<< "\n";
+            std::cout<<"picking_out_stayed_exchanged_agents(microseconds), "<<picking_out_stayed_exchanged_agents<< "\n";
+            std::cout<<"create_the_new_arrays_after_movement(microseconds), "<<create_the_new_arrays_after_movement<< "\n";
+            std::cout<<"exchanging_agents_with_mpi(microseconds), "<<exchanging_agents_with_mpi<< "\n";
+            std::cout<<"copying_agents_when_no_communication(microseconds), "<<copying_agents_when_no_communication<< "\n";
+            std::cout<<"sorting_and_picking_exchanging_agents(microseconds), "<<sorting_and_picking_exchanging_agents<< "\n";
+            std::cout<<"copying_agents_to_agentLocationAfterMovement(microseconds), "<<copying_agents_to_agentLocationAfterMovement<< "\n";
+            std::cout<< "sum(microseconds), "<<  sumtime<<  "\n";
+        }
 
-    std::cout<<"exchanging_agents_with_mpi took "<<exchanging_agents_with_mpi<< " microseconds\n";
-    std::cout<<"create_the_new_arrays_after_movement took "<<create_the_new_arrays_after_movement<< " microseconds\n";
-    std::cout<<"copying_agents_when_no_communication took "<<copying_agents_when_no_communication<< " microseconds\n";
-    std::cout<<"sorting_and_picking_exchanging_agents took "<<sorting_and_picking_exchanging_agents<< " microseconds\n";
-    std::cout<<"copying_agents_to_agentLocationAfterMovement took "<<copying_agents_to_agentLocationAfterMovement<< " microseconds\n";
-    std::cout<< "sum "<<  sumtime<<  " microseconds\n";
+    }
+   
 
 
     delete[] requests;

@@ -13,6 +13,7 @@
 #include "thrust/sort.h"
 #include <thrust/system/system_error.h>
 #include <mpi.h>
+#include <cmath>
 
 
 constexpr double agentLocRatio = 2.25;
@@ -49,17 +50,26 @@ int main(int argc, char* argv[]) {
     str << argv[5];
     unsigned iter_exchange_number;
     str >> iter_exchange_number;
+    str.clear();
+    str << argv[6];
+    unsigned outSideRatioDividedBy;
+    str >> outSideRatioDividedBy;
     auto movedRatioInside=static_cast<double>(0.25);
     auto movedRatioOutside=static_cast<double>(0.05);
+    std::cout<< "outSideRatioDividedBy " <<outSideRatioDividedBy<<"\n";
+
+    movedRatioOutside = movedRatioOutside/ pow(2,outSideRatioDividedBy);
+    std::cout<< " movedRatioOutside " <<movedRatioOutside <<"\n";
+    
     auto locs= static_cast<unsigned>(static_cast<double>(agents) / agentLocRatio);
-    std::cout << "used parameters NUM_OF_CITIES: " << NUM_OF_CITIES << " NUM_OF_ITERATIONS: "<<NUM_OF_ITERATIONS << " agents: "<< agents<<
-    " movedRatioInside: "<< movedRatioInside << " movedRatioOutside : "<< movedRatioOutside << " locs: "<< locs << " print_on: " << print_on << "iter_exchange_number "<< iter_exchange_number<<"\n";
+    std::cout << "used_parameters_NUM_OF_CITIES:" << NUM_OF_CITIES << "_NUM_OF_ITERATIONS:"<<NUM_OF_ITERATIONS << "_agents: "<< agents<<
+    "_movedRatioInside:"<< movedRatioInside << "_movedRatioOutside:"<< movedRatioOutside << "_locs:"<< locs << "_print_on:" << print_on << "iter_exchange_number:"<< iter_exchange_number<<"\n";
    unsigned rank2 = rank;
    unsigned size2 = size;
    if(NUM_OF_CITIES != size){
        MPI_Abort(MPI_COMM_WORLD,1);
    }
-
+   
    PostMovement p(NUM_OF_CITIES, NUM_OF_ITERATIONS, agents,  movedRatioInside, movedRatioOutside, locs, print_on, rank2, size2, iter_exchange_number);
 }
 
