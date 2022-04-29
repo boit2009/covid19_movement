@@ -58,8 +58,11 @@ int main(int argc, char* argv[]) {
     auto movedRatioOutside=static_cast<double>(0.05);
     movedRatioOutside = movedRatioOutside/ pow(2,outSideRatioDividedBy);
     auto locs= static_cast<unsigned>(static_cast<double>(agents) / agentLocRatio);
-    std::cout << "used_parameters_NUM_OF_CITIES:" << NUM_OF_CITIES << "_NUM_OF_ITERATIONS:"<<NUM_OF_ITERATIONS << "_agents: "<< agents<<
-    "_movedRatioInside:"<< movedRatioInside << "_movedRatioOutside:"<< movedRatioOutside << "_locs:"<< locs << "_print_on:" << print_on << "iter_exchange_number:"<< iter_exchange_number<<"\n";
+    if(rank == 0){
+        std::cout << "used_parameters_NUM_OF_CITIES:" << NUM_OF_CITIES << "_NUM_OF_ITERATIONS:"<<NUM_OF_ITERATIONS << "_agents: "<< agents<<
+        "_movedRatioInside:"<< movedRatioInside << "_movedRatioOutside:"<< movedRatioOutside << "_locs:"<< locs << "_print_on:" << print_on <<  "iter_exchange_number:"<< iter_exchange_number<<"\n";
+    }
+    
    unsigned rank2 = rank;
    unsigned size2 = size;
    if(NUM_OF_CITIES != size){

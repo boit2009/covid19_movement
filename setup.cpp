@@ -111,9 +111,10 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
     MPI_Request *requests =new MPI_Request[NUM_OF_CITIES*2 - 2];
 
 
-RandomGenerator::init(agents);
-unsigned locationNumberPerCity = (locations / NUM_OF_CITIES) - 1; 
-printf("The_locationNumberPerCity_value_is:, %d \n", locationNumberPerCity);
+    RandomGenerator::init(agents);
+    unsigned locationNumberPerCity = (locations / NUM_OF_CITIES) - 1; 
+    if(print_on && rank == 0)
+        printf("The_locationNumberPerCity_value_is:, %d \n", locationNumberPerCity);
     auto t01 = std::chrono::high_resolution_clock::now();
     //reserving memory 
     //nvtxRangePushA("init_host_data");

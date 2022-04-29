@@ -1,14 +1,14 @@
 #!/bin/bash -f
-for outsideratio in {1,3,4,5,6,7,8,9,10}
+for outsideratio in {0,2}
     do
-    for iter in {1,2,4,8,16}
+    for iter_per_communication in {1,2,4,8,16}
     do
-        for j in {100000,200000}
+        for agent_num in {100000,200000}
         do 
-            for i in {1,2}
+            for process_city_num in {1,2}
             do       
-                mpirun -np ${i} ~/numawrap ./mpi.exe ${i} 16 ${j} 0 ${iter} ${outsideratio}>> city${i}_agents${j}_iterations16_${outsideratio}_${iter}_MPI.txt 
-                echo "city${i}_agents${j}_iterations16_${outsideratio}_${iter}_MPI.txt  done"
+                mpirun -np ${process_city_num} ~/numawrap ./mpi.exe ${process_city_num} 16 ${agent_num} 0 ${iter_per_communication} ${outsideratio}>> city${process_city_num}_agents${agent_num}_iter_per_communication${iter_per_communication}_outsideratio${outsideratio}_MPI.txt 
+                echo "city${process_city_num}_agents${agent_num}_iterations16_outsideratio_005_dividedby2pow${outsideratio}_iter_per_communication${iter_per_communication}_MPI.txt  done"
                 
             done
         done
