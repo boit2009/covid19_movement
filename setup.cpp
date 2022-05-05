@@ -181,7 +181,6 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agent
 
     auto sum1 = std::chrono::high_resolution_clock::now();
     for(int ITER=-1;ITER<NUM_OF_ITERATIONS;ITER++){
-        std::cout<< "iter "<< ITER <<"\n";
         if(ITER == 0){
             movement_time = 0;
             picking_out_stayed_exchanged_agents = 0;
