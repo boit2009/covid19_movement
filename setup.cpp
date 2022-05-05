@@ -87,7 +87,7 @@ struct ZipComparator
         return thrust::get<2>(a) < thrust::get<2>(b);
     }
 };
-void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside, unsigned locations,unsigned print_on,
+void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside, unsigned locations,unsigned print_on,
     thrust::device_vector<unsigned> &generatorHelper,
     thrust::device_vector<unsigned> &agentID,
     thrust::device_vector<thrust::tuple<unsigned, unsigned>> &locationAgentList,
@@ -180,7 +180,18 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
 
 
     auto sum1 = std::chrono::high_resolution_clock::now();
-    for(unsigned ITER=0;ITER<NUM_OF_ITERATIONS;ITER++){
+    for(int ITER=-1;ITER<NUM_OF_ITERATIONS;ITER++){
+        std::cout<< "iter "<< ITER <<"\n";
+        if(ITER == 0){
+            movement_time = 0;
+            picking_out_stayed_exchanged_agents = 0;
+            exchanging_agents_with_mpi = 0;
+            create_the_new_arrays_after_movement = 0;
+            copying_agents_when_no_communication = 0;
+            sorting_and_picking_exchanging_agents = 0;
+            copying_agents_to_agentLocationAfterMovement = 0;
+            sum1 = std::chrono::high_resolution_clock::now();
+        }
 
         auto t1 = std::chrono::high_resolution_clock::now();
     
@@ -283,7 +294,7 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
         movement_time += std::chrono::duration_cast<std::chrono::microseconds>(t4-t3).count();
         if ((ITER+1)%iter_exchange_number==0){
         //    nvtxRangePop();
-
+            
             auto t4_1 = std::chrono::high_resolution_clock::now(); 
                 
             
@@ -582,7 +593,7 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
 
 
 }
-PostMovement::PostMovement(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
+PostMovement::PostMovement(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
  unsigned locations,unsigned print_on, unsigned rank, unsigned size,unsigned iter_exchange_number)
                 : generatorHelper(agents/NUM_OF_CITIES*1.2)
                  {
