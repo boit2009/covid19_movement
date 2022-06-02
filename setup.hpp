@@ -31,7 +31,7 @@ public:
     thrust::device_vector<thrust::tuple<unsigned, unsigned,unsigned>>agentLocationAfterMovement;
 
 
-    PostMovement(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
+    PostMovement(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
     unsigned locations, unsigned print_on, unsigned rank, unsigned size, unsigned iter_exchange_number);
 
 };

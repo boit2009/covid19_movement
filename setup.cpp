@@ -17,7 +17,9 @@
 #include <thrust/binary_search.h>
 #include <mpi.h>
 #include "randomGenerator.h"
-//#include "nvToolsExt.h"
+#ifdef NVTX
+#include "nvToolsExt.h"
+#endif
 #ifndef __host__
 #define __host__
 #endif
@@ -87,7 +89,7 @@ struct ZipComparator
         return thrust::get<2>(a) < thrust::get<2>(b);
     }
 };
-void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside, unsigned locations,unsigned print_on,
+void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside, unsigned locations,unsigned print_on,
     thrust::device_vector<unsigned> &generatorHelper,
     thrust::device_vector<unsigned> &agentID,
     thrust::device_vector<thrust::tuple<unsigned, unsigned>> &locationAgentList,
@@ -117,7 +119,9 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
         printf("The_locationNumberPerCity_value_is:, %d \n", locationNumberPerCity);
     auto t01 = std::chrono::high_resolution_clock::now();
     //reserving memory 
-    //nvtxRangePushA("init_host_data");
+#ifdef NVTX
+    nvtxRangePushA("init_host_data");
+#endif
     locationAgentList.reserve(agents/NUM_OF_CITIES*1.2);
     hostAgentLocation.reserve(agents/NUM_OF_CITIES*1.2);
     offset.resize((locations/NUM_OF_CITIES) + 1);
@@ -132,7 +136,9 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
     IncomingAgent.reserve(agents/NUM_OF_CITIES*1.2);
     hostIncomingAgent.reserve(agents/NUM_OF_CITIES*1.2);
     agentLocationAfterMovement.reserve(agents/NUM_OF_CITIES*1.2);
-   // nvtxRangePop();
+#ifdef NVTX
+    nvtxRangePop();
+#endif
     
     generatorHelper.reserve(agents/NUM_OF_CITIES*1.2);
     unsigned vector_size;
@@ -142,15 +148,23 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
     //firstly generate the locations and the agentIDs
     vector_size= agents/NUM_OF_CITIES;
     agentID.resize(vector_size);
-   // nvtxRangePushA("genereate_sequences");
+#ifdef NVTX
+    nvtxRangePushA("genereate_sequences");
+#endif
     thrust::sequence(agentID.begin(), agentID.end(), 0 + rank *  vector_size);
-   // nvtxRangePop();
+#ifdef NVTX
+    nvtxRangePop();
+#endif
     hostAgentLocation.resize(vector_size);
-  //  nvtxRangePushA("genereate_random locations");
+#ifdef NVTX
+    nvtxRangePushA("genereate_random locations");
+#endif
     thrust::generate(hostAgentLocation.begin(), hostAgentLocation.end(), [locationNumberPerCity] __host__ __device__(){
         return RandomGenerator::randomUnsigned(locationNumberPerCity);
     });
-   // nvtxRangePop();
+#ifdef NVTX
+    nvtxRangePop();
+#endif
     if(print_on){
         std::cout << "\n Generated locations\n ";
         thrust::copy(hostAgentLocation.begin(), hostAgentLocation.end(), std::ostream_iterator<unsigned>(std::cout, " "));
@@ -167,7 +181,7 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
 
     
     auto t02 = std::chrono::high_resolution_clock::now();
-    std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
+    
     
     auto update_arrays_time = 0;
     auto movement_time = 0;
@@ -180,23 +194,40 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
 
 
     auto sum1 = std::chrono::high_resolution_clock::now();
-    for(unsigned ITER=0;ITER<NUM_OF_ITERATIONS;ITER++){
+    for(int ITER=-5;ITER<NUM_OF_ITERATIONS;ITER++){
+        if(ITER == 0){
+            movement_time = 0;
+            picking_out_stayed_exchanged_agents = 0;
+            exchanging_agents_with_mpi = 0;
+            create_the_new_arrays_after_movement = 0;
+            copying_agents_when_no_communication = 0;
+            sorting_and_picking_exchanging_agents = 0;
+            copying_agents_to_agentLocationAfterMovement = 0;
+            sum1 = std::chrono::high_resolution_clock::now();
+        }
 
         auto t1 = std::chrono::high_resolution_clock::now();
-    
         placeToCopyAgentLength.resize(vector_size);
         locationAgentList.resize(vector_size);
         generatorHelper.resize(vector_size);
         hostAgentLocation.resize(vector_size);  
-     //   nvtxRangePushA("copy_the_host_agent_locations_to_copy_array_in_the_beginning");             
+#ifdef NVTX
+        nvtxRangePushA("copy_the_host_agent_locations_to_copy_array_in_the_beginning");             
+#endif
         thrust::copy(hostAgentLocation.begin(), hostAgentLocation.end(), placeToCopyAgentLength.begin());
-     //   nvtxRangePop();
-     //nvtxRangePushA("sequence_generation_before_sorting_in_the_beginning"); 
+#ifdef NVTX
+        nvtxRangePop();
+        nvtxRangePushA("sequence_generation_before_sorting_in_the_beginning"); 
+#endif
         thrust::sequence(generatorHelper.begin(), generatorHelper.end());
-    //nvtxRangePop();
-    //nvtxRangePushA("sorting_arrays_in_the_beginning"); 
+#ifdef NVTX
+	nvtxRangePop();
+    	nvtxRangePushA("sorting_arrays_in_the_beginning"); 
+#endif
         thrust::stable_sort_by_key(placeToCopyAgentLength.begin(), placeToCopyAgentLength.end(), generatorHelper.begin());
-    //    nvtxRangePop();
+#ifdef NVTX
+        nvtxRangePop();
+#endif
         if(print_on){
             std::cout << "Generate locationagentlist \n ";
             thrust::copy(generatorHelper.begin(), generatorHelper.end(), std::ostream_iterator<unsigned>(std::cout, " "));
@@ -204,12 +235,18 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
             thrust::copy(placeToCopyAgentLength.begin(), placeToCopyAgentLength.end(), std::ostream_iterator<unsigned>(std::cout, " "));
             std::cout << "\n";
         }
-   //     nvtxRangePushA("sequence_generation_before_lower_bound_in_the_beginning"); 
+#ifdef NVTX
+        nvtxRangePushA("sequence_generation_before_lower_bound_in_the_beginning"); 
+#endif
         thrust::sequence(offset.begin(), offset.end());
-    //    nvtxRangePop();
-   //     nvtxRangePushA("lower_bound_time_in_the_beginning"); 
+#ifdef NVTX
+        nvtxRangePop();
+        nvtxRangePushA("lower_bound_time_in_the_beginning"); 
+#endif
         thrust::lower_bound(placeToCopyAgentLength.begin(),placeToCopyAgentLength.end(),offset.begin(), offset.end(),offset.begin());
-   //     nvtxRangePop();
+#ifdef NVTX
+        nvtxRangePop();
+#endif
 
 
         
@@ -227,16 +264,21 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
         
         // generate movement
         auto t3 = std::chrono::high_resolution_clock::now();
-        
         agentID.resize(vector_size);
         exchangeHelperVector.resize(vector_size);
         stayedAngentsHelperVector.resize(vector_size);
-    //    nvtxRangePushA("fill_helper_vectos_with_zeros"); 
+#ifdef NVTX
+        nvtxRangePushA("fill_helper_vectos_with_zeros"); 
+#endif
         thrust::fill(exchangeHelperVector.begin(), exchangeHelperVector.end(), 0);
         thrust::fill(stayedAngentsHelperVector.begin(), stayedAngentsHelperVector.end(), 0);                       
-   //    nvtxRangePop();
+#ifdef NVTX
+       nvtxRangePop();
+#endif
         hostMovement.resize(vector_size);
-  //      nvtxRangePushA("generate_the_random_movement");
+#ifdef NVTX
+        nvtxRangePushA("generate_the_random_movement");
+#endif
         thrust::transform(thrust::make_zip_iterator(thrust::make_tuple(agentID.begin(), hostAgentLocation.begin(),hostMovement.begin()))
                         , thrust::make_zip_iterator(thrust::make_tuple(agentID.end(), hostAgentLocation.end(),hostMovement.end()))
                         , hostMovement.begin()
@@ -282,14 +324,18 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
         auto t4 = std::chrono::high_resolution_clock::now();
         movement_time += std::chrono::duration_cast<std::chrono::microseconds>(t4-t3).count();
         if ((ITER+1)%iter_exchange_number==0){
-        //    nvtxRangePop();
-
+#ifdef NVTX
+            nvtxRangePop();
+#endif
+            
             auto t4_1 = std::chrono::high_resolution_clock::now(); 
                 
             
             //  std::cout << "\n";   
             movedAgentSizeFromCity=0;
-    //     nvtxRangePushA("fill_the_helper_vectors_based_on_the_movement");
+#ifdef NVTX
+         nvtxRangePushA("fill_the_helper_vectors_based_on_the_movement");
+#endif
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(
                                     hostMovement.begin(),
                                     exchangeHelperVector.begin(),
@@ -307,7 +353,9 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
                     thrust::get<2>(tup)=1;
                 }
             }); 
-    //      nvtxRangePop();
+#ifdef NVTX
+          nvtxRangePop();
+#endif
 
         
             auto t4_2 = std::chrono::high_resolution_clock::now();
@@ -316,14 +364,20 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
             
             
             unsigned exchangedAgents = exchangeHelperVector[hostMovement.size()-1];
-    //     nvtxRangePushA("exclusive_scan_with_exchange_helper_vectors");
+#ifdef NVTX
+         nvtxRangePushA("exclusive_scan_with_exchange_helper_vectors");
+#endif
             thrust::exclusive_scan(exchangeHelperVector.begin(), exchangeHelperVector.end(), exchangeHelperVector.begin());
-    //      nvtxRangePop();
+#ifdef NVTX
+          nvtxRangePop();
+#endif
             movedAgentSizeFromCity = exchangedAgents + exchangeHelperVector[hostMovement.size()-1]; //to know how many agent left city
             exChangeAgent.resize(movedAgentSizeFromCity);
             if(print_on)
                 hostexChangeAgent.resize(movedAgentSizeFromCity);
-    //     nvtxRangePushA("put_leaving_agents_into_exchangeagents");
+#ifdef NVTX
+        nvtxRangePushA("put_leaving_agents_into_exchangeagents");
+#endif
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(// this for each will put the leaving agents into the exChangeAgents[i].
                         hostMovement.begin(),
                         thrust::make_permutation_iterator(exChangeAgent.begin(), exchangeHelperVector.begin()))),
@@ -339,14 +393,22 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
                         thrust::get<1>(tup)= thrust::make_tuple<unsigned, unsigned, unsigned>(id,loc,city); //put the values to exchangeagents
                     }
             });
-            //nvtxRangePop();
+#ifdef NVTX
+            nvtxRangePop();
+#endif
             if(print_on)
                 hostexChangeAgent = exChangeAgent; // to be able to print, this can be removed later
-        //    nvtxRangePushA("stable_sort_on_exchange_agnets");
+#ifdef NVTX
+            nvtxRangePushA("stable_sort_on_exchange_agnets");
+#endif
             thrust::stable_sort(exChangeAgent.begin(),exChangeAgent.end(), ZipComparator()); //sort the exchanging array by city
-    //     nvtxRangePop();
+#ifdef NVTX
+         nvtxRangePop();
+#endif
             thrust::device_vector<unsigned>cityIndex(exChangeAgent.size());
-    //      nvtxRangePushA("pull_out_the_needed_city_indexes");
+#ifdef NVTX
+          nvtxRangePushA("pull_out_the_needed_city_indexes");
+#endif
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(
                         cityIndex.begin(),
                         exChangeAgent.begin()))
@@ -358,24 +420,42 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
                             
                 });
                 
-    //     nvtxRangePop();
-    //      nvtxRangePushA("sequence_before_offsetForExChangeAgents_lower_bound");
+#ifdef NVTX
+         nvtxRangePop();
+         nvtxRangePushA("sequence_before_offsetForExChangeAgents_lower_bound");
+#endif
             thrust::sequence(offsetForExChangeAgent.begin(), offsetForExChangeAgent.end());
-    //      nvtxRangePop();
-    //      nvtxRangePushA("lower_bound_on_offsetForExChangeAgents");
+#ifdef NVTX
+          nvtxRangePop();
+          nvtxRangePushA("lower_bound_on_offsetForExChangeAgents");
+#endif
             thrust::lower_bound(cityIndex.begin(),cityIndex.end(),offsetForExChangeAgent.begin(),
             offsetForExChangeAgent.end(),offsetForExChangeAgent.begin());
-    //        nvtxRangePop();
+#ifdef NVTX
+            nvtxRangePop();
+#endif
 
         
+#ifdef NVTX
+	    nvtxRangePushA("move exchange data to host");
+#endif
             hostexChangeAgent.resize(exChangeAgent.size());
-            thrust::copy(exChangeAgent.begin(), exChangeAgent.end(), hostexChangeAgent.begin());
+            thrust::tuple<unsigned, unsigned, unsigned>* gpuptr = thrust::raw_pointer_cast(&exChangeAgent[0]);
+            thrust::tuple<unsigned, unsigned, unsigned>* cpuptr = thrust::raw_pointer_cast(&hostexChangeAgent[0]);
+            cudaMemcpy(cpuptr,gpuptr,exChangeAgent.size()*sizeof( thrust::tuple<unsigned, unsigned, unsigned>),cudaMemcpyDeviceToHost);
+            //thrust::copy(exChangeAgent.begin(), exChangeAgent.end(), hostexChangeAgent.begin());
+#ifdef NVTX
+	    nvtxRangePop();
+#endif
             auto t6 = std::chrono::high_resolution_clock::now(); 
             sorting_and_picking_exchanging_agents += std::chrono::duration_cast<std::chrono::microseconds>(t6-t5).count(); 
             auto t7 = std::chrono::high_resolution_clock::now(); 
             unsigned counter=0;
             unsigned incomingAgentsNumberToParticularCity=0;
-            unsigned *incoming_agents_array = new unsigned[NUM_OF_CITIES];//felszabadítani
+            unsigned *incoming_agents_array = new unsigned[NUM_OF_CITIES];
+#ifdef NVTX
+	    nvtxRangePushA("send/recv counts");
+#endif
             for(unsigned j = 0; j < NUM_OF_CITIES;j++){
                 if(j !=rank){
                     unsigned number_of_sent_agents = offsetForExChangeAgent[j+1] - offsetForExChangeAgent[j]; 
@@ -390,6 +470,11 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
                     incomingAgentsNumberToParticularCity +=incoming_agents_array[j];
                 }
             }
+            
+#ifdef NVTX
+	    nvtxRangePop();
+	    nvtxRangePushA("send/recv agents");
+#endif
             
             hostIncomingAgent.resize(incomingAgentsNumberToParticularCity);
             counter=0;
@@ -412,7 +497,9 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
             auto t8 = std::chrono::high_resolution_clock::now(); 
             exchanging_agents_with_mpi += std::chrono::duration_cast<std::chrono::microseconds>(t8-t7).count();
             auto t9 = std::chrono::high_resolution_clock::now(); 
-        
+#ifdef NVTX
+	    nvtxRangePop();
+#endif        
         
             if(print_on){
                     hostexChangeAgent = exChangeAgent; // to be able to print, this can be removed later
@@ -436,13 +523,21 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
             if(print_on)
                 std::cout<<"incomingAgentsNumberToParticularCity "<<incomingAgentsNumberToParticularCity<<"\n";
 
+#ifdef NVTX
+          nvtxRangePushA("resize incoming GPU buffers");
+#endif
             IncomingAgent.resize(incomingAgentsNumberToParticularCity);
             //the new size will be the original size - left agents size + incoming agents size
             agentLocationAfterMovement.resize(vector_size-movedAgentSizeFromCity+incomingAgentsNumberToParticularCity);
-    //      nvtxRangePushA("exclusive_scan_on_stayed_helper_vector");
+#ifdef NVTX
+	  nvtxRangePop();
+          nvtxRangePushA("exclusive_scan_on_stayed_helper_vector");
+#endif
             thrust::exclusive_scan(stayedAngentsHelperVector.begin(), stayedAngentsHelperVector.end(), stayedAngentsHelperVector.begin());
-    //       nvtxRangePop();
-    //        nvtxRangePushA("put_the_stayed_agents_into_agentLocationAfterMovements");
+#ifdef NVTX
+           nvtxRangePop();
+            nvtxRangePushA("put_the_stayed_agents_into_agentLocationAfterMovements");
+#endif
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(//put the stayed agents into the agentLocationAfterMovements[i]
                 hostMovement.begin(),
                 thrust::make_permutation_iterator(agentLocationAfterMovement.begin(), stayedAngentsHelperVector.begin()))),
@@ -458,9 +553,15 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
                         thrust::get<1>(tup)= thrust::make_tuple<unsigned,unsigned,unsigned>(id,loc,city);
                     }
                     });
-    //      nvtxRangePop();
-    //      nvtxRangePushA("put_the_incoming_agents_into_agentLocationAfterMovements");  
-            thrust::copy(hostIncomingAgent.begin(),hostIncomingAgent.end(),IncomingAgent.begin()); //vissza kell ezt host vectorra másolni egyáltalán? !!!
+#ifdef NVTX
+          nvtxRangePop();
+          nvtxRangePushA("put_the_incoming_agents_into_agentLocationAfterMovements");  
+#endif
+            //thrust::copy(hostIncomingAgent.begin(),hostIncomingAgent.end(),IncomingAgent.begin()); //vissza kell ezt host vectorra másolni egyáltalán? !!!
+            
+            thrust::tuple<unsigned, unsigned, unsigned>* gpuptr2 = thrust::raw_pointer_cast(&IncomingAgent[0]);
+            thrust::tuple<unsigned, unsigned, unsigned>* cpuptr2 = thrust::raw_pointer_cast(&hostIncomingAgent[0]);
+            cudaMemcpy(gpuptr2,cpuptr2,IncomingAgent.size()*sizeof( thrust::tuple<unsigned, unsigned, unsigned>),cudaMemcpyHostToDevice);
             thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(//this will put the incoming agents to the end of the agentLocationAfterMovements[i]
                 agentLocationAfterMovement.begin()+vector_size-movedAgentSizeFromCity,
                 IncomingAgent.begin())),
@@ -483,7 +584,9 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
             copying_agents_when_no_communication += std::chrono::duration_cast<std::chrono::microseconds>(t12-t11).count();
             
         }
-   //     nvtxRangePop();
+#ifdef NVTX
+        nvtxRangePop();
+#endif
 
 
         //this is only needed for printing
@@ -508,7 +611,9 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
         agentID.resize(vector_size);
         hostAgentLocation.resize(vector_size);
 
-    //    nvtxRangePushA("copy_the_needed_information_to_agentIDs_and_hostAgentLocations_arrays");
+#ifdef NVTX
+        nvtxRangePushA("copy_the_needed_information_to_agentIDs_and_hostAgentLocations_arrays");
+#endif
         thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(
                         agentID.begin(),
                         hostAgentLocation.begin(),
@@ -523,7 +628,9 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
                 thrust::get<1>(tup) = thrust::get<1>(movement);
             
             });
-   //     nvtxRangePop();
+#ifdef NVTX
+        nvtxRangePop();
+#endif
         if ((ITER+1)%iter_exchange_number==0){
             hostMovement.resize(vector_size);
             thrust::copy(agentLocationAfterMovement.begin(),agentLocationAfterMovement.end(),hostMovement.begin());
@@ -547,6 +654,7 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
     auto sumtime = std::chrono::duration_cast<std::chrono::microseconds>(sum2-sum1).count();
     MPI_Finalize();
     if (print_on){
+        std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
         std::cout<<"update_arrays_time(microseconds), "<<update_arrays_time<< "\n";
         std::cout<<"movement_time(microseconds), "<<movement_time<< "\n";
         std::cout<<"picking_out_stayed_exchanged_agents(microseconds), "<<picking_out_stayed_exchanged_agents<< "\n";
@@ -559,6 +667,7 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
     }
     else{
         if(rank==0){
+            std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
             std::cout<<"update_arrays_time(microseconds), "<<update_arrays_time<< "\n";
             std::cout<<"movement_time(microseconds), "<<movement_time<< "\n";
             std::cout<<"picking_out_stayed_exchanged_agents(microseconds), "<<picking_out_stayed_exchanged_agents<< "\n";
@@ -580,7 +689,7 @@ void helperFunction(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned 
 
 
 }
-PostMovement::PostMovement(unsigned NUM_OF_CITIES, unsigned NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
+PostMovement::PostMovement(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
  unsigned locations,unsigned print_on, unsigned rank, unsigned size,unsigned iter_exchange_number)
                 : generatorHelper(agents/NUM_OF_CITIES*1.2)
                  {

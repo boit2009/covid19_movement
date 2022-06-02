@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
     str >> NUM_OF_CITIES;
     str.clear();
     str << argv[2];
-    unsigned NUM_OF_ITERATIONS;
+    int NUM_OF_ITERATIONS;
     str >> NUM_OF_ITERATIONS;
     str.clear();
     str << argv[3];
