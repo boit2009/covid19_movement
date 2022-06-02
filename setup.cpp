@@ -323,7 +323,7 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agent
         });
         auto t4 = std::chrono::high_resolution_clock::now();
         movement_time += std::chrono::duration_cast<std::chrono::microseconds>(t4-t3).count();
-        if ((ITER+1)%iter_exchange_number==0){
+        if ((ITER+1)%iter_exchange_number==0 || ITER<0){
 #ifdef NVTX
             nvtxRangePop();
 #endif
