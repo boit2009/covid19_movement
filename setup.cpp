@@ -182,6 +182,7 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agent
     auto sum1 = std::chrono::high_resolution_clock::now();
     for(int ITER=-1;ITER<NUM_OF_ITERATIONS;ITER++){
         if(ITER == 0){
+            update_arrays_time = 0;
             movement_time = 0;
             picking_out_stayed_exchanged_agents = 0;
             exchanging_agents_with_mpi = 0;
