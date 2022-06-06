@@ -5,7 +5,7 @@ do
     do 
         for i in {1,2}
         do       
-            mpirun -np ${i} ~/numawrap ./mpi.exe ${i} 16 ${j} 0 ${iter} >> city${i}_agents${j}_iterations16_005_${iter}_MPI.txt 
+            mpirun -np ${i} ~/numawrap ./gpu.exe ${i} 16 ${j} 0 ${iter} >> city${i}_agents${j}_iterations16_005_${iter}_MPI.txt 
             echo "city${i}_agents${j}_iterations16_005_${iter}_MPI.txt  done"
             
         done

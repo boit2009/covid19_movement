@@ -1,6 +1,6 @@
 #!/bin/bash -f
 
-for agent_num in {1000000,2000000}
+for agent_num in {800000,1600000,3200000}
 do 
     for process_city_num in {1,2}
     do       
