@@ -194,7 +194,7 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agent
 
 
     auto sum1 = std::chrono::high_resolution_clock::now();
-    for(int ITER=-5;ITER<NUM_OF_ITERATIONS;ITER++){
+    for(int ITER=-1;ITER<NUM_OF_ITERATIONS;ITER++){
         if(ITER == 0){
             movement_time = 0;
             picking_out_stayed_exchanged_agents = 0;
@@ -323,7 +323,7 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agent
         });
         auto t4 = std::chrono::high_resolution_clock::now();
         movement_time += std::chrono::duration_cast<std::chrono::microseconds>(t4-t3).count();
-        if ((ITER+1)%iter_exchange_number==0 || ITER<0){
+        if ((ITER+1)%iter_exchange_number==0){
 #ifdef NVTX
             nvtxRangePop();
 #endif
@@ -631,11 +631,16 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agent
 #ifdef NVTX
         nvtxRangePop();
 #endif
+#ifdef NVTX
+        nvtxRangePushA("copy_IN_THE_END");
+#endif
         if ((ITER+1)%iter_exchange_number==0){
             hostMovement.resize(vector_size);
             thrust::copy(agentLocationAfterMovement.begin(),agentLocationAfterMovement.end(),hostMovement.begin());
         }
-            
+#ifdef NVTX
+        nvtxRangePop();
+#endif            
         if(print_on){
             std::cout<<"ids and locations after movement"<<"\n";
             thrust::copy(agentID.begin(), agentID.end(), std::ostream_iterator<unsigned>(std::cout, "\t"));
@@ -701,4 +706,3 @@ PostMovement::PostMovement(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigne
 
     
 }
-
