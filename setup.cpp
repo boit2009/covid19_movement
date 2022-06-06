@@ -196,6 +196,7 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agent
     auto sum1 = std::chrono::high_resolution_clock::now();
     for(int ITER=-1;ITER<NUM_OF_ITERATIONS;ITER++){
         if(ITER == 0){
+            update_arrays_time = 0;
             movement_time = 0;
             picking_out_stayed_exchanged_agents = 0;
             exchanging_agents_with_mpi = 0;
@@ -557,8 +558,7 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agent
           nvtxRangePop();
           nvtxRangePushA("put_the_incoming_agents_into_agentLocationAfterMovements");  
 #endif
-            //thrust::copy(hostIncomingAgent.begin(),hostIncomingAgent.end(),IncomingAgent.begin()); //vissza kell ezt host vectorra másolni egyáltalán? !!!
-            
+                        
             thrust::tuple<unsigned, unsigned, unsigned>* gpuptr2 = thrust::raw_pointer_cast(&IncomingAgent[0]);
             thrust::tuple<unsigned, unsigned, unsigned>* cpuptr2 = thrust::raw_pointer_cast(&hostIncomingAgent[0]);
             cudaMemcpy(gpuptr2,cpuptr2,IncomingAgent.size()*sizeof( thrust::tuple<unsigned, unsigned, unsigned>),cudaMemcpyHostToDevice);
@@ -576,6 +576,10 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agent
             });
             auto t10 = std::chrono::high_resolution_clock::now(); 
             copying_agents_to_agentLocationAfterMovement += std::chrono::duration_cast<std::chrono::microseconds>(t10-t9).count();
+#ifdef NVTX
+        nvtxRangePop();
+#endif
+
         }else{
             auto t11 = std::chrono::high_resolution_clock::now(); 
             agentLocationAfterMovement.resize(hostMovement.size());
@@ -584,9 +588,6 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agent
             copying_agents_when_no_communication += std::chrono::duration_cast<std::chrono::microseconds>(t12-t11).count();
             
         }
-#ifdef NVTX
-        nvtxRangePop();
-#endif
 
 
         //this is only needed for printing
