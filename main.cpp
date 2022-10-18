@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Must run with 1,2,4 or 8 processes\n";
         MPI_Abort(MPI_COMM_WORLD,1);
     }*/
-    
+    //init comment
     std::stringstream str;
     str << argv[1];
     unsigned NUM_OF_CITIES;
