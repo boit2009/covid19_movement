@@ -11,6 +11,16 @@ public:
     static constexpr unsigned FROM = 1;
     static constexpr unsigned TO = 2;
 
+
+    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned, unsigned >>structForAgents; 
+    /*unique agent ID 0
+    home partition ID 1
+    current partition ID 2 
+    destination partition ID 3 
+    current county ID 4 
+    iternumber amikor elmegy 5 
+    iternumber amikor hazajön  6*/
+
     thrust::device_vector<unsigned> generatorHelper;
 
     thrust::device_vector<unsigned> agentID;//contains the IDs in the particular city
