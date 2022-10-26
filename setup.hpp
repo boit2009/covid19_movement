@@ -12,8 +12,17 @@ public:
     static constexpr unsigned TO = 2;
 
 
-    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned, unsigned >>structForAgents; 
-    /*unique agent ID 0
+    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned >>structForAgents; 
+    /* NEW VERSION
+    unique agent ID 0
+    loc            1
+    home partition ID 2
+    destination partition ID 3
+    iternumber amikor elmegy 4
+    iternumber amikor hazajön 5*/
+    
+    /*OLD VERSION
+    unique agent ID 0
     home partition ID 1
     current partition ID 2 
     destination partition ID 3 
@@ -29,19 +38,23 @@ public:
     thrust::device_vector<unsigned> offset;
 
     thrust::device_vector<unsigned>placeToCopyAgentLength;
-    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>> hostMovement;
-    thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned>> hostexChangeAgent;//just for printing
-    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned>> exChangeAgent;
+    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> hostMovement;
+    thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> hostexChangeAgent;//just for printing
+    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> exChangeAgent;
     thrust::device_vector<unsigned> offsetForExChangeAgent;
     unsigned movedAgentSizeFromCity;
     thrust::device_vector<unsigned> exchangeHelperVector;
     thrust::device_vector<unsigned> stayedAngentsHelperVector;
-    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned >>IncomingAgent;
-    thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned >>hostIncomingAgent;
-    thrust::device_vector<thrust::tuple<unsigned, unsigned,unsigned>>agentLocationAfterMovement;
+    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned >>IncomingAgent;
+    thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned >>hostIncomingAgent;
+    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>>agentLocationAfterMovement;
 
 
-    PostMovement(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
-    unsigned locations, unsigned print_on, unsigned rank, unsigned size, unsigned iter_exchange_number);
+    /*PostMovement(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS,unsigned agents, double movedRatioInside, double movedRatioOutside,
+    unsigned locations, unsigned print_on, unsigned rank, unsigned size, unsigned iter_exchange_number);*/
+    PostMovement(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedRatioInside, double movedRatioOutside,
+    unsigned locations, unsigned print_on, unsigned rank, unsigned size, unsigned iter_exchange_number, unsigned NUM_OF_AGENTS, thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned >> structForAgents,
+    thrust::device_vector<unsigned> agentID);
+
 
 };
