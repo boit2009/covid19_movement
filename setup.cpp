@@ -182,14 +182,7 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
         thrust::copy(hostAgentLocation.begin(), hostAgentLocation.end(), std::ostream_iterator<unsigned>(std::cout, " "));
         std::cout << "\n ";
     }
-    //done in main
-    /*hostMovement.resize(agents/NUM_OF_CITIES*1.2);
-    thrust::for_each(hostMovement.begin(), hostMovement.end(),[rank] __host__ __device__ ( thrust::tuple<unsigned, unsigned, unsigned>& tup) {//fill the cityvalue in the beginning
-                thrust::get<2>(tup)=rank;
-                thrust::get<0>(tup)=rank; //to be inited
-                thrust::get<1>(tup)=rank;  
-        }); 
-    hostMovement.resize(vector_size);*/
+
 
 
     
@@ -330,7 +323,7 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
                 while(newLoc == loc) { newLoc =  RandomGenerator::randomUnsigned(locationNumberPerCity); }
                     return thrust::make_tuple(idx ,newLoc, thrust::get<2>(structForAgent),thrust::get<3>(structForAgent),thrust::get<4>(structForAgent),thrust::get<5>(structForAgent));
                 }   
-                
+                    return structForAgent; // it will never happen
         });
         auto t4 = std::chrono::high_resolution_clock::now();
         movement_time += std::chrono::duration_cast<std::chrono::microseconds>(t4-t3).count();
@@ -491,7 +484,8 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
             unsigned *incoming_agents_array = new unsigned[size];
 #ifdef NVTX
 	    nvtxRangePushA("send/recv counts");
-#endif
+#endif  
+        if (ITER != -1){ //there is a needed communication for proper toime measurement
             for(unsigned j = 0; j < size;j++){
                 if(j !=rank){
                     unsigned number_of_sent_agents = offsetForExChangeAgent[j+1] - offsetForExChangeAgent[j]; 
@@ -506,6 +500,19 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
                     incomingAgentsNumberToParticularCity +=incoming_agents_array[j];
                 }
             }
+        }else{// thiis is only needed for proper time emasurement, this will only send 1-s to all the other processes
+             for(unsigned j = 0; j < size;j++){
+                if(j !=rank){
+                    unsigned number_of_sent_agents = 1;
+                    MPI_Isend(&number_of_sent_agents, 1, MPI_UNSIGNED, j, rank, MPI_COMM_WORLD, &requests[2*counter + 0]);
+                    MPI_Irecv(&incoming_agents_array[j], 1, MPI_UNSIGNED, j, j, MPI_COMM_WORLD, &requests[2*counter + 1]);
+                    counter++;
+                }
+            }
+            MPI_Waitall(2*size - 2, &requests[0], MPI_STATUSES_IGNORE);
+
+        }
+            
             
 #ifdef NVTX
 	    nvtxRangePop();
@@ -514,22 +521,24 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
             
             hostIncomingAgent.resize(incomingAgentsNumberToParticularCity);
             counter=0;
-            for(unsigned j = 0; j < size;j++){
-                if(j !=rank){
-                    unsigned number_of_sent_agents = offsetForExChangeAgent[j+1] - offsetForExChangeAgent[j];
-                    MPI_Isend((unsigned*)&hostexChangeAgent[offsetForExChangeAgent[j]], 6*number_of_sent_agents, MPI_UNSIGNED, j, rank, MPI_COMM_WORLD, &requests[2*counter + 0]);
-                    unsigned where_to_start=0;
-                    for(int i=0;i<j;i++){
-                        if(i!=rank){
-                            where_to_start+= incoming_agents_array[i];
+            if (ITER != -1){
+                for(unsigned j = 0; j < size;j++){
+                    if(j !=rank){
+                        unsigned number_of_sent_agents = offsetForExChangeAgent[j+1] - offsetForExChangeAgent[j];
+                        MPI_Isend((unsigned*)&hostexChangeAgent[offsetForExChangeAgent[j]], 6*number_of_sent_agents, MPI_UNSIGNED, j, rank, MPI_COMM_WORLD, &requests[2*counter + 0]);
+                        unsigned where_to_start=0;
+                        for(int i=0;i<j;i++){
+                            if(i!=rank){
+                                where_to_start+= incoming_agents_array[i];
+                            }
                         }
+                        MPI_Irecv(&hostIncomingAgent[where_to_start],6*incoming_agents_array[j], MPI_UNSIGNED, j, j, MPI_COMM_WORLD, &requests[2*counter + 1]);
+                        counter++;
                     }
-                    MPI_Irecv(&hostIncomingAgent[where_to_start],6*incoming_agents_array[j], MPI_UNSIGNED, j, j, MPI_COMM_WORLD, &requests[2*counter + 1]);
-                    counter++;
                 }
+                MPI_Waitall(2*size - 2, &requests[0], MPI_STATUSES_IGNORE); 
+                delete[] incoming_agents_array;
             }
-            MPI_Waitall(2*size - 2, &requests[0], MPI_STATUSES_IGNORE); 
-            delete[] incoming_agents_array;
             auto t8 = std::chrono::high_resolution_clock::now(); 
             exchanging_agents_with_mpi += std::chrono::duration_cast<std::chrono::microseconds>(t8-t7).count();
             auto t9 = std::chrono::high_resolution_clock::now(); 
@@ -714,9 +723,37 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
     }
     auto sum2 = std::chrono::high_resolution_clock::now();
     auto sumtime = std::chrono::duration_cast<std::chrono::microseconds>(sum2-sum1).count();
-    MPI_Finalize();
-    if (print_on){
-        std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
+    
+     int global_sum, global_update_arrays_time, global_movement_time, global_picking_out_stayed_exchanged_agents
+     ,global_create_the_new_arrays_after_movement,global_exchanging_agents_with_mpi
+     ,global_copying_agents_when_no_communication, global_sorting_and_picking_exchanging_agents
+     , global_copying_agents_to_agentLocationAfterMovement  = 0;
+     int min_exchanging_agents_with_mpi, max_exchanging_agents_with_mpi = 0;
+
+    //int sum_time = (int) sumtime;
+    MPI_Allreduce(&sumtime, &global_sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&update_arrays_time, &global_update_arrays_time, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&movement_time, &global_movement_time, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&picking_out_stayed_exchanged_agents, &global_picking_out_stayed_exchanged_agents, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&create_the_new_arrays_after_movement, &global_create_the_new_arrays_after_movement, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&exchanging_agents_with_mpi, &global_exchanging_agents_with_mpi, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&copying_agents_when_no_communication, &global_copying_agents_when_no_communication, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&sorting_and_picking_exchanging_agents, &global_sorting_and_picking_exchanging_agents, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&copying_agents_to_agentLocationAfterMovement, &global_copying_agents_to_agentLocationAfterMovement, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    MPI_Allreduce(&exchanging_agents_with_mpi, &min_exchanging_agents_with_mpi, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+    MPI_Allreduce(&exchanging_agents_with_mpi, &max_exchanging_agents_with_mpi, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    global_sum = global_sum / size;
+    global_update_arrays_time = global_update_arrays_time / size;
+    global_movement_time = global_movement_time / size;
+    global_picking_out_stayed_exchanged_agents = global_picking_out_stayed_exchanged_agents / size;
+    global_create_the_new_arrays_after_movement = global_create_the_new_arrays_after_movement / size;
+    global_exchanging_agents_with_mpi = global_exchanging_agents_with_mpi / size;
+    global_copying_agents_when_no_communication = global_copying_agents_when_no_communication / size;
+    global_sorting_and_picking_exchanging_agents = global_sorting_and_picking_exchanging_agents / size;
+    global_copying_agents_to_agentLocationAfterMovement = global_copying_agents_to_agentLocationAfterMovement / size;
+    if(rank==0 ){
+        /*std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
         std::cout<<"update_arrays_time(microseconds), "<<update_arrays_time<< "\n";
         std::cout<<"movement_time(microseconds), "<<movement_time<< "\n";
         std::cout<<"picking_out_stayed_exchanged_agents(microseconds), "<<picking_out_stayed_exchanged_agents<< "\n";
@@ -725,23 +762,31 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
         std::cout<<"copying_agents_when_no_communication(microseconds), "<<copying_agents_when_no_communication<< "\n";
         std::cout<<"sorting_and_picking_exchanging_agents(microseconds), "<<sorting_and_picking_exchanging_agents<< "\n";
         std::cout<<"copying_agents_to_agentLocationAfterMovement(microseconds), "<<copying_agents_to_agentLocationAfterMovement<< "\n";
-        std::cout<< "sum(microseconds), "<<  sumtime<<  "\n";
-    }
-    else{
-       // if(rank==0 ){
-            std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
-            std::cout<<"update_arrays_time(microseconds), "<<update_arrays_time<< "\n";
-            std::cout<<"movement_time(microseconds), "<<movement_time<< "\n";
-            std::cout<<"picking_out_stayed_exchanged_agents(microseconds), "<<picking_out_stayed_exchanged_agents<< "\n";
-            std::cout<<"create_the_new_arrays_after_movement(microseconds), "<<create_the_new_arrays_after_movement<< "\n";
-            std::cout<<"exchanging_agents_with_mpi(microseconds), "<<exchanging_agents_with_mpi<< "\n";
-            std::cout<<"copying_agents_when_no_communication(microseconds), "<<copying_agents_when_no_communication<< "\n";
-            std::cout<<"sorting_and_picking_exchanging_agents(microseconds), "<<sorting_and_picking_exchanging_agents<< "\n";
-            std::cout<<"copying_agents_to_agentLocationAfterMovement(microseconds), "<<copying_agents_to_agentLocationAfterMovement<< "\n";
-            std::cout<< "sum(microseconds), "<<  sumtime<<  "\n";
-       // }
+        std::cout<<"minimal communication time "<<min_exchanging_agents_with_mpi<< "\n";
+        std::cout<<"maximal communication time "<<max_exchanging_agents_with_mpi<< "\n";
 
+
+        std::cout<< "sum(microseconds), "<<  sumtime<<  "\n";*/
+
+
+
+
+        
+        std::cout <<"Average_Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
+        std::cout<<"Average_update_arrays_time(microseconds), "<<global_update_arrays_time<< "\n";
+        std::cout<<"Average_movement_time(microseconds), "<<global_movement_time<< "\n";
+        std::cout<<"Average_picking_out_stayed_exchanged_agents(microseconds), "<<global_picking_out_stayed_exchanged_agents<< "\n";
+        std::cout<<"Average_create_the_new_arrays_after_movement(microseconds), "<<global_create_the_new_arrays_after_movement<< "\n";
+        std::cout<<"Average_copying_agents_when_no_communication(microseconds), "<<global_copying_agents_when_no_communication<< "\n";
+        std::cout<<"Average_sorting_and_picking_exchanging_agents(microseconds), "<<global_sorting_and_picking_exchanging_agents<< "\n";
+        std::cout<<"Average_copying_agents_to_agentLocationAfterMovement(microseconds), "<<global_copying_agents_to_agentLocationAfterMovement<< "\n";
+        std::cout<<"Average_exchanging_agents_with_mpi(microseconds), "<<global_exchanging_agents_with_mpi<< "\n";
+        std::cout<<"minimal_communication_time, "<<min_exchanging_agents_with_mpi<< "\n";
+        std::cout<<"maximal_communication_time, "<<max_exchanging_agents_with_mpi<< "\n";
+        std::cout<<"Average_sum(microseconds), "<<  global_sum<<  "\n";
     }
+
+    MPI_Finalize();
    
 
 

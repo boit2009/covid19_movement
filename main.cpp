@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     std::string CSR_file = "CSR_modified_unsymmetric.txt";
     std::string indexes_filename = "partition_indexes_" + processnum + ".txt";
     std::string ids_filename = "ids_start_" + processnum + ".txt";
-    /*std::string population_filename = "csr_population_probe.txt";
+    /*std::string population_filename = "csr_population_probe.txt"; //for debugging
     std::string CSR_file = "csr_probe.txt";
     std::string indexes_filename = "part_indexes_probe.txt";
     std::string ids_filename = "ids_start.txt";*/
@@ -108,10 +108,6 @@ int main(int argc, char *argv[])
     readInTxt(indexes_filename, part_indexes);
     readInTxt(ids_filename, IDs_helper);
     readInCSR(CSR_file, csr_val, csr_col, csr_row);
-   /* for (int i = 0; i < IDs_helper.size(); i++)
-    {
-        std::cout << IDs_helper[i] << std::endl;
-    }*/
     std::cout << rank << " size:" << size << std::endl;
     unsigned agent_start_index, agent_end_index, NUM_OF_AGENTS;
     agent_start_index = IDs_helper[urank];
@@ -129,8 +125,6 @@ int main(int argc, char *argv[])
     fillWithRank.resize(NUM_OF_AGENTS);
     fillIterNumber.reserve(NUM_OF_AGENTS * 2.0);
     fillIterNumber.resize(NUM_OF_AGENTS);
-   // locs.reserve(NUM_OF_AGENTS * 2.0);
-   // locs.resize(NUM_OF_AGENTS);
     structForAgents.reserve(NUM_OF_AGENTS * 2.0);
     thrust::for_each(structForAgents.begin(), structForAgents.end(),[rank] __host__ __device__ ( thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>& tup) {//fill the cityvalue in the beginning
             thrust::get<0>(tup)=rank;
@@ -180,8 +174,8 @@ int main(int argc, char *argv[])
                     unsigned leaving_part_time, arriving_part_time;
                     int r= (rand() % 15)+30;
                     int r2= (rand() % 15)+80;
-                    //int r= (rand() % 2)+1;
-                    //int r2= (rand() % 2)+5;
+                    /*int r= (rand() % 2)+1; //for debugging
+                    int r2= (rand() % 2)+5;*/
                     leaving_part_time = r;
                     arriving_part_time = r2;
                     thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned> origAgent = structForAgents[processed_number_of_agents];
