@@ -1,5 +1,5 @@
 #!/bin/bash -f
-for iter in {2,4,8,16,32}
+for iter in {2,4,8,16,36}
 do  
     OMP_NUM_THREADS=32 mpirun -np 2 ~reguly/numawrap_omp2 ./mpi.exe 0 ${iter} >real_2_iter_${iter}.txt
     echo "real_2_iter_${iter}txt  done"
