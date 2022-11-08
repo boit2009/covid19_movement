@@ -189,14 +189,14 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
     auto t02 = std::chrono::high_resolution_clock::now();
     
     
-    auto update_arrays_time = 0;
-    auto movement_time = 0;
-    auto picking_out_stayed_exchanged_agents = 0;
-    auto exchanging_agents_with_mpi = 0;
-    auto create_the_new_arrays_after_movement = 0;
-    auto copying_agents_when_no_communication = 0;
-    auto sorting_and_picking_exchanging_agents = 0;
-    auto copying_agents_to_agentLocationAfterMovement = 0;
+    int64_t update_arrays_time = 0;
+    int64_t movement_time = 0;
+    int64_t picking_out_stayed_exchanged_agents = 0;
+    int64_t exchanging_agents_with_mpi = 0;
+    int64_t create_the_new_arrays_after_movement = 0;
+    int64_t copying_agents_when_no_communication = 0;
+    int64_t sorting_and_picking_exchanging_agents = 0;
+    int64_t copying_agents_to_agentLocationAfterMovement = 0;
 
 
     auto sum1 = std::chrono::high_resolution_clock::now();
@@ -724,25 +724,37 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
     auto sum2 = std::chrono::high_resolution_clock::now();
     auto sumtime = std::chrono::duration_cast<std::chrono::microseconds>(sum2-sum1).count();
     
-     int global_sum, global_update_arrays_time, global_movement_time, global_picking_out_stayed_exchanged_agents
+     int64_t global_sum, global_update_arrays_time, global_movement_time, global_picking_out_stayed_exchanged_agents
      ,global_create_the_new_arrays_after_movement,global_exchanging_agents_with_mpi
      ,global_copying_agents_when_no_communication, global_sorting_and_picking_exchanging_agents
      , global_copying_agents_to_agentLocationAfterMovement  = 0;
-     int min_exchanging_agents_with_mpi, max_exchanging_agents_with_mpi = 0;
+     int64_t min_exchanging_agents_with_mpi, max_exchanging_agents_with_mpi = 0;
+     /*double localmin = (double) exchanging_agents_with_mpi;
+     double localmax = (double) exchanging_agents_with_mpi;
+     double sumTime = (double) sumtime;
+     double Update_arrays_time = (double)update_arrays_time;
+     double Movement_time = (double)movement_time;
+     double Picking_out_stayed_exchanged_agents = (double)picking_out_stayed_exchanged_agents;
+     double Create_the_new_arrays_after_movement = (double)create_the_new_arrays_after_movement;
+     double Exchanging_agents_with_mpi = (double)exchanging_agents_with_mpi;
+     double Copying_agents_when_no_communication = (double)copying_agents_when_no_communication;
+     double Sorting_and_picking_exchanging_agents = (double)sorting_and_picking_exchanging_agents;
+     double Copying_agents_to_agentLocationAfterMovement = (double)copying_agents_to_agentLocationAfterMovement;*/
+
 
     //int sum_time = (int) sumtime;
-    MPI_Allreduce(&sumtime, &global_sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(&update_arrays_time, &global_update_arrays_time, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(&movement_time, &global_movement_time, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(&picking_out_stayed_exchanged_agents, &global_picking_out_stayed_exchanged_agents, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(&create_the_new_arrays_after_movement, &global_create_the_new_arrays_after_movement, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(&exchanging_agents_with_mpi, &global_exchanging_agents_with_mpi, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(&copying_agents_when_no_communication, &global_copying_agents_when_no_communication, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(&sorting_and_picking_exchanging_agents, &global_sorting_and_picking_exchanging_agents, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(&copying_agents_to_agentLocationAfterMovement, &global_copying_agents_to_agentLocationAfterMovement, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&sumtime, &global_sum, 1, MPI_INT64_T, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&update_arrays_time, &global_update_arrays_time, 1, MPI_INT64_T, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&movement_time, &global_movement_time, 1, MPI_INT64_T, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&picking_out_stayed_exchanged_agents, &global_picking_out_stayed_exchanged_agents, 1, MPI_INT64_T, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&create_the_new_arrays_after_movement, &global_create_the_new_arrays_after_movement, 1, MPI_INT64_T, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&exchanging_agents_with_mpi, &global_exchanging_agents_with_mpi, 1, MPI_INT64_T, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&copying_agents_when_no_communication, &global_copying_agents_when_no_communication, 1, MPI_INT64_T, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&sorting_and_picking_exchanging_agents, &global_sorting_and_picking_exchanging_agents, 1, MPI_INT64_T, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&copying_agents_to_agentLocationAfterMovement, &global_copying_agents_to_agentLocationAfterMovement, 1, MPI_INT64_T, MPI_SUM, MPI_COMM_WORLD);
 
-    MPI_Allreduce(&exchanging_agents_with_mpi, &min_exchanging_agents_with_mpi, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
-    MPI_Allreduce(&exchanging_agents_with_mpi, &max_exchanging_agents_with_mpi, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    MPI_Allreduce(&exchanging_agents_with_mpi, &min_exchanging_agents_with_mpi, 1, MPI_INT64_T, MPI_MIN, MPI_COMM_WORLD);
+    MPI_Allreduce(&exchanging_agents_with_mpi, &max_exchanging_agents_with_mpi, 1, MPI_INT64_T, MPI_MAX, MPI_COMM_WORLD);
     global_sum = global_sum / size;
     global_update_arrays_time = global_update_arrays_time / size;
     global_movement_time = global_movement_time / size;
@@ -753,7 +765,7 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
     global_sorting_and_picking_exchanging_agents = global_sorting_and_picking_exchanging_agents / size;
     global_copying_agents_to_agentLocationAfterMovement = global_copying_agents_to_agentLocationAfterMovement / size;
     if(rank==0 ){
-        /*std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
+        std::cout << "Setup_and_memory_resolution_took(microseconds), "<< std::chrono::duration_cast<std::chrono::microseconds>(t02-t01).count()<< "\n";
         std::cout<<"update_arrays_time(microseconds), "<<update_arrays_time<< "\n";
         std::cout<<"movement_time(microseconds), "<<movement_time<< "\n";
         std::cout<<"picking_out_stayed_exchanged_agents(microseconds), "<<picking_out_stayed_exchanged_agents<< "\n";
@@ -762,11 +774,11 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
         std::cout<<"copying_agents_when_no_communication(microseconds), "<<copying_agents_when_no_communication<< "\n";
         std::cout<<"sorting_and_picking_exchanging_agents(microseconds), "<<sorting_and_picking_exchanging_agents<< "\n";
         std::cout<<"copying_agents_to_agentLocationAfterMovement(microseconds), "<<copying_agents_to_agentLocationAfterMovement<< "\n";
-        std::cout<<"minimal communication time "<<min_exchanging_agents_with_mpi<< "\n";
-        std::cout<<"maximal communication time "<<max_exchanging_agents_with_mpi<< "\n";
+        /*std::cout<<"minimal communication time "<<min_exchanging_agents_with_mpi<< "\n";
+        std::cout<<"maximal communication time "<<max_exchanging_agents_with_mpi<< "\n";*/
 
 
-        std::cout<< "sum(microseconds), "<<  sumtime<<  "\n";*/
+        std::cout<< "sum(microseconds), "<<  sumtime<<  "\n";
 
 
 

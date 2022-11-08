@@ -172,8 +172,10 @@ int main(int argc, char *argv[])
 
                     for (unsigned i=0;i<number_of_agents_to_this_col_ind;i++){
                     unsigned leaving_part_time, arriving_part_time;
-                    int r= (rand() % 15)+30;
-                    int r2= (rand() % 15)+80;
+                    /*int r= (rand() % 15)+30;
+                    int r2= (rand() % 15)+80;*/
+                    int r= (rand() % 40)+20;
+                    int r2= (rand() % 40)+80;
                     /*int r= (rand() % 2)+1; //for debugging
                     int r2= (rand() % 2)+5;*/
                     leaving_part_time = r;
