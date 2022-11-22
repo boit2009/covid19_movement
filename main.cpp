@@ -10,6 +10,7 @@
 #include "thrust/set_operations.h"
 #include "thrust/iterator/permutation_iterator.h"
 #include "thrust/sequence.h"
+#include <thrust/for_each.h>
 #include "thrust/iterator/transform_iterator.h"
 #include "thrust/iterator/zip_iterator.h"
 #include "thrust/sort.h"
@@ -79,12 +80,13 @@ int main(int argc, char *argv[])
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+    std::cout<<"size"<<size<<std::endl;
     /* if ( size != 1 && size != 2 && size != 4 && size != 8) {
          std::cout << "Must run with 1,2,4 or 8 processes\n";
          MPI_Abort(MPI_COMM_WORLD,1);
      }*/
     std::string processnum = std::to_string(size);
-    thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> structForAgents;
+    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> structForAgents;
     /*unique agent ID 0
     loc            1
     home partition ID 2
@@ -119,13 +121,13 @@ int main(int argc, char *argv[])
 
     // init structForAgents
     thrust::device_vector<unsigned> agentID, fillWithRank, fillIterNumber/*, locs*/;
-    agentID.reserve(NUM_OF_AGENTS * 2.0);
+    agentID.reserve(NUM_OF_AGENTS * 1.001);
     agentID.resize(NUM_OF_AGENTS);
-    fillWithRank.reserve(NUM_OF_AGENTS * 2.0);
+    fillWithRank.reserve(NUM_OF_AGENTS * 1.001);
     fillWithRank.resize(NUM_OF_AGENTS);
-    fillIterNumber.reserve(NUM_OF_AGENTS * 2.0);
+    fillIterNumber.reserve(NUM_OF_AGENTS * 1.001);
     fillIterNumber.resize(NUM_OF_AGENTS);
-    structForAgents.reserve(NUM_OF_AGENTS * 2.0);
+    structForAgents.reserve(NUM_OF_AGENTS * 1.001);
     thrust::for_each(structForAgents.begin(), structForAgents.end(),[rank] __host__ __device__ ( thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>& tup) {//fill the cityvalue in the beginning
             thrust::get<0>(tup)=rank;
             thrust::get<1>(tup)=rank; //to be inited
@@ -191,7 +193,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-    for(unsigned  j =0;j<  structForAgents.size();j++){
+   /* for(unsigned  j =0;j<  structForAgents.size();j++){
        // if (j%10000==0){
         unsigned id =thrust::get<0>(structForAgents[j]);
         unsigned loc =thrust::get<1>(structForAgents[j]);
@@ -203,7 +205,7 @@ int main(int argc, char *argv[])
         //std::cout<<"rank"<< rank << " ID" <<id <<" loc"<<loc<< " home " << home<< " dest" <<dest <<" leave " << leave<<"arrive"<< arrive<<std::endl;
         //}
        
-    }
+    }*/
 
      std::stringstream str;
      /*str << argv[1];

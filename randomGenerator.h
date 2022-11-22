@@ -23,8 +23,8 @@ class RandomGenerator {
     static std::vector<std::mt19937_64> generators;
 
 public:
-    static void init(unsigned agents);
-    static void resize(unsigned agents);
+    static void init(size_t agents);
+    static void resize(size_t agents);
 
    /* static thrust::host_vector<float> fillUnitf(unsigned size) {
         thrust::host_vector<float> tmp(size);

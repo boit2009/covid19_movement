@@ -38,7 +38,6 @@ public:
     thrust::device_vector<unsigned> offset;
 
     thrust::device_vector<unsigned>placeToCopyAgentLength;
-    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> hostMovement;
     thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> hostexChangeAgent;//just for printing
     thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> exChangeAgent;
     thrust::device_vector<unsigned> offsetForExChangeAgent;

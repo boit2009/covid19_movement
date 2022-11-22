@@ -43,7 +43,7 @@ __global__ void setup_kernel(unsigned total, curandState* dstates2) {
 }
 #endif
 
-void RandomGenerator::init(unsigned agents) {
+void RandomGenerator::init(size_t agents) {
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
     curandState* devStates;
     cudaMalloc((void**)&devStates, agents * sizeof(curandState));
@@ -58,7 +58,7 @@ void RandomGenerator::init(unsigned agents) {
     for (unsigned i = 0; i < threads; ++i) { generators.emplace_back(rd()); }
 }
 
-void RandomGenerator::resize(unsigned agents) {
+void RandomGenerator::resize(size_t agents) {
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
     if (dstates_size < agents) {
         curandState* devStates;
@@ -105,7 +105,6 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
     thrust::device_vector<unsigned>&hostAgentLocation,
     thrust::device_vector<unsigned> &offset,
     thrust::device_vector<unsigned>&placeToCopyAgentLength,
-    thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> &hostMovement,
     thrust::host_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> &hostexChangeAgent,
     thrust::device_vector<thrust::tuple<unsigned, unsigned, unsigned, unsigned, unsigned, unsigned>> &exChangeAgent,
     thrust::device_vector<unsigned> &offsetForExChangeAgent,
@@ -124,7 +123,6 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
     
     MPI_Request *requests =new MPI_Request[size*2 - 2];
 
-
     RandomGenerator::init(NUM_OF_AGENTS);
     unsigned locationNumberPerCity = (locations / size) - 1; 
     if(print_on)
@@ -134,25 +132,24 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
 #ifdef NVTX
     nvtxRangePushA("init_host_data");
 #endif
-    locationAgentList.reserve(NUM_OF_AGENTS*2.0);
-    hostAgentLocation.reserve(NUM_OF_AGENTS*2.0);
+    locationAgentList.reserve(NUM_OF_AGENTS*1.002);
+    hostAgentLocation.reserve(NUM_OF_AGENTS*1.002);
     offset.resize((locations/size) + 1);
-    placeToCopyAgentLength.reserve(NUM_OF_AGENTS*2.0);
-    hostMovement.reserve(NUM_OF_AGENTS*2.0);
-    hostexChangeAgent.reserve(NUM_OF_AGENTS*2.0);
-    exChangeAgent.reserve(NUM_OF_AGENTS*2.0);
+    placeToCopyAgentLength.reserve(NUM_OF_AGENTS*1.002);
+    hostexChangeAgent.reserve(NUM_OF_AGENTS*1.002);
+    exChangeAgent.reserve(NUM_OF_AGENTS*0.002);
     offsetForExChangeAgent.reserve(size+1);
     offsetForExChangeAgent.resize(size+1);
-    exchangeHelperVector.reserve(NUM_OF_AGENTS*2.0);
-    stayedAngentsHelperVector.reserve(NUM_OF_AGENTS*2.0);
-    IncomingAgent.reserve(NUM_OF_AGENTS*2.0);
-    hostIncomingAgent.reserve(NUM_OF_AGENTS*2.0);
-    agentLocationAfterMovement.reserve(NUM_OF_AGENTS*2.0);
+    exchangeHelperVector.reserve(NUM_OF_AGENTS*1.002);
+    stayedAngentsHelperVector.reserve(NUM_OF_AGENTS*1.002);
+    IncomingAgent.reserve(NUM_OF_AGENTS*0.002);
+    hostIncomingAgent.reserve(NUM_OF_AGENTS*1.002);
+    agentLocationAfterMovement.reserve(NUM_OF_AGENTS*1.002);
 #ifdef NVTX
     nvtxRangePop();
 #endif
     
-    generatorHelper.reserve(NUM_OF_AGENTS/size*2.0);
+    generatorHelper.reserve(NUM_OF_AGENTS/size*1.002);
     unsigned vector_size;
     
     
@@ -174,6 +171,7 @@ void helperFunction(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double movedR
     thrust::generate(hostAgentLocation.begin(), hostAgentLocation.end(), [locationNumberPerCity] __host__ __device__(){
         return RandomGenerator::randomUnsigned(locationNumberPerCity);
     });
+
 #ifdef NVTX
     nvtxRangePop();
 #endif
@@ -815,7 +813,7 @@ PostMovement::PostMovement(unsigned NUM_OF_CITIES, int NUM_OF_ITERATIONS, double
                  {
 
     helperFunction(NUM_OF_CITIES,NUM_OF_ITERATIONS,movedRatioInside,movedRatioOutside,locations,print_on,
-    generatorHelper,agentID,locationAgentList,hostAgentLocation,offset,placeToCopyAgentLength,hostMovement,hostexChangeAgent,
+    generatorHelper,agentID,locationAgentList,hostAgentLocation,offset,placeToCopyAgentLength,hostexChangeAgent,
     exChangeAgent,offsetForExChangeAgent,movedAgentSizeFromCity,exchangeHelperVector,stayedAngentsHelperVector,IncomingAgent,hostIncomingAgent,
     agentLocationAfterMovement,rank,size, iter_exchange_number,NUM_OF_AGENTS, structForAgents);
 
